@@ -133,3 +133,4 @@ config.py
 .idea/
 venv/
 database.db
+chats/
