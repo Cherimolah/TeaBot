@@ -45,8 +45,8 @@ class ChatDB:
 
     async def insert_groups(self, members_dict, members: MessagesGetConversationMembers):
         for group in members.groups:
-            await self.sql.execute("INSERT INTO groups VALUES (?, ?, ?, ?, ?)",
-                                   (-group.id, group.name, members_dict[-group.id]['admin'],
+            await self.sql.execute("INSERT INTO groups VALUES (?, ?, ?, ?, ?, ?, ?)",
+                                   (-group.id, group.name, group.screen_name, members_dict[-group.id]['admin'], -1,
                                     members_dict[-group.id]['join_date'], members_dict[-group.id]['invited_by']))
         await self.db.commit()
 
@@ -65,8 +65,8 @@ class ChatDB:
                                " mute_time INT DEFAULT -1, ban_time INT DEFAULT -1, kombucha REAL DEFAULT 0.0,"
                                " kombucha_time BIGINT DEFAULT 0, join_date INTEGER, invited_by INTEGER,"
                                " UNIQUE ('id') ON CONFLICT IGNORE)")
-        await self.sql.execute("CREATE TABLE IF NOT EXISTS groups (id INT, name TEXT, admin INT, join_date INT, "
-                               "invited_by INT, UNIQUE ('id') ON CONFLICT IGNORE)")
+        await self.sql.execute("CREATE TABLE IF NOT EXISTS groups (id INT, name TEXT, screen_name TEXT, admin INT, "
+                               "ban_time INT, join_date INT, invited_by INT, UNIQUE ('id') ON CONFLICT IGNORE)")
         await self.sql.execute("CREATE TABLE IF NOT EXISTS warns (user_id INT UNIQUE, from_user_id INT, to_time INT)")
 
         users_count = 0

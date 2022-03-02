@@ -2,6 +2,7 @@ from loader import bot
 import traceback
 import time
 from datetime import datetime, timedelta
+from ongoing.chat_updater import update_chats
 
 
 @bot.error_handler.register_error_handler(Exception)
@@ -12,4 +13,5 @@ async def exception(e: Exception):
 
 
 if __name__ == '__main__':
+    bot.loop_wrapper.add_task(update_chats())
     bot.run_forever()

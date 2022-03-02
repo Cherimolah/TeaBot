@@ -1,17 +1,25 @@
-from blueprints.blueprint import bp
 from typing import List
+from blueprints.blueprint import bp
+from vkbottle.http.aiohttp import AiohttpClient
+from config import BOT_TOKEN
+
+
+client = AiohttpClient()
 
 
 async def get_cases_users(user_ids: List[int]) -> List[List[dict]]:
-    users_string = f'"{",".join([str(x) for x in user_ids])}"'
-    return (await bp.api.execute('return [API.users.get({"user_ids": ' + users_string + ','
-                                 ' "fields": "sex,screen_name"})'
-                                 ', API.users.get({"user_ids": '
-                                 + users_string + ', "name_case": "gen"}),'
-                                 ' API.users.get({"user_ids": ' + users_string +
-                                 ', "name_case": "dat"}), API.users.get({"user_ids": ' +
-                                 users_string + ','
-                                 ' "name_case": "acc"}), API.users.get({"user_ids": ' +
-                                 users_string + ','
-                                 ' "name_case": "ins"}), API.users.get({"user_ids": ' +
-                                 users_string + ', "name_case": "abl"})];'))['response']
+    users = f'{",".join([str(x) for x in user_ids])}'
+    return (await bp.api.execute(f'return [API.users.get({{"user_ids": "{users}", "fields": "sex,screen_name"}}),\n'
+                                 f'API.users.get({{"user_ids": "{users}", "name_case": "gen"}}),\n'
+                                 f'API.users.get({{"user_ids": "{users}", "name_case": "dat"}}),\n'
+                                 f'API.users.get({{"user_ids": "{users}", "name_case": "acc"}}),\n'
+                                 f'API.users.get({{"user_ids": "{users}", "name_case": "ins"}}),\n'
+                                 f'API.users.get({{"user_ids": "{users}", "name_case": "abl"}})];'))['response']
+
+
+async def get_conversations_members(peer_ids: List[int]) -> dict:
+    code = f"""return [{','.join([f'API.messages.getConversationMembers({{"peer_id": {x}}})' for x in peer_ids])}];"""
+    response = (await client.request_json(f"https://api.vk.com/method/execute?code={code}&access_token={BOT_TOKEN}&"
+                                          f"v=5.144"))['response']
+    return response
+
