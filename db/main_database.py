@@ -20,14 +20,28 @@ class MainDB:
         await self.sql.execute("SELECT chat_id FROM chats")
         return await self.sql.fetchall()
 
-    async def add_outcome(self, value: str, peer_id: int):
+    async def add_outcome(self, val_type: str, peer_id: int):
         if peer_id in MY_PEERS:
             return
-        assert value not in ["outcome_messages, edited_messages, outcome_event_answers"]
         today = datetime.now().date()
-        await self.sql.execute(f"INSERT OR IGNORE INTO stats VALUES (?, ?, ?, ?, ?);",
+        await self.sql.execute("INSERT OR IGNORE INTO stats VALUES (?, ?, ?, ?, ?)",
                                (today, 0, 0, 0, 0))
-        await self.sql.execute("UPDATE stats SET outcome_messages = outcome_messages + 1 WHERE date = ?", (today,))
+        if val_type == "outcome_message":
+            await self.sql.execute("UPDATE stats SET outcome_messages = outcome_messages + 1 WHERE date = ?", (today,))
+        elif val_type == "edit_message":
+            await self.sql.execute("UPDATE stats SET edited_messages = edited_messages + 1 WHERE date = ?", (today,))
+        elif val_type == "event_answer":
+            await self.sql.execute("UPDATE stats SET outcome_event_answers = outcome_event_answers + 1 WHERE date = ?",
+                                   (today,))
+        await self.db.commit()
+
+    async def add_income(self, peer_id: int):
+        if peer_id in MY_PEERS:
+            return
+        today = datetime.now().date()
+        await self.sql.execute("INSERT OR IGNORE INTO stats VALUES (?, ?, ?, ?, ?)",
+                               (today, 1, 0, 0, 1))
+        await self.sql.execute("UPDATE stats SET income_messages = income_messages + 1 WHERE date = ?", (today,))
         await self.db.commit()
 
 
