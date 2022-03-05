@@ -11,7 +11,6 @@ async def exception(e: Exception):
     print(e)
     print(traceback.format_exc())
 
-
 if __name__ == '__main__':
     bot.loop_wrapper.add_task(update_chats())
     bot.run_forever()

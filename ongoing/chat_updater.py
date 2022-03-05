@@ -2,6 +2,10 @@ from middlewares.registration import registered_chats
 from typing import NoReturn
 from utils.vkscripts import get_conversations_members, get_cases_users
 from blueprints.blueprint import bp
+import asyncio
+import time
+from config import GROUP_ID
+from db.chat_database import ChatDB
 
 
 async def update_chats() -> NoReturn:
@@ -9,6 +13,8 @@ async def update_chats() -> NoReturn:
 
         # Получение списка ответов от вк актульной информации об участниках беседы
         peer_ids = [int(x + 2e9) for x in registered_chats.keys()]
+        if not peer_ids:
+            await asyncio.sleep(1)
         chats = [y for x in [await get_conversations_members(peer_ids[i:min(len(peer_ids), i + 25)]) \
                              for i in range(0, len(peer_ids), 25)] for y in x]
 
@@ -16,11 +22,12 @@ async def update_chats() -> NoReturn:
         for i in range(len(chats)):
 
             # Пропуск незарегистрированных бесед и бесед без доступа к участникам
-            chat_db = registered_chats[int(peer_ids[i] - 2e9)]
+            chat_db = await ChatDB().connect(peer_ids[i]-2000000000)
             if not chats[i] or chat_db is None:
                 continue
 
-            await chat_db.sql.execute("UPDATE users SET ban_time = -4 WHERE ban_time = -1")  # Флаг обновление статуса
+            # Флаг обновление статуса
+            await chat_db.sql.execute("UPDATE users SET ban_time = -4 WHERE ban_time = -1 OR ban_time = -5")
 
             # Получение списка имён пользователей из беседы отсортрованных по падежам
             users_ids = [{"id": x['member_id'], "admin": 2 if "is_owner" in x else 1 if "is_admin" in x else 0} for x in
@@ -118,4 +125,53 @@ async def update_chats() -> NoReturn:
             # Установка флага "кик", т.к. группы самостоятельно не выходят обычно
             await chat_db.sql.execute("UPDATE groups SET ban_time = -2 WHERE ban_time = -4")
 
+            await asyncio.sleep(0.2)
+
+            # Обновление сроков ограничений
+            await chat_db.sql.execute("SELECT id, ban_time, mute_time FROM users")
+            restrictions = await chat_db.sql.fetchall()
+            for user_id, ban, mute in restrictions:
+                if 0 < ban < time.time():
+                    await chat_db.sql.execute("UPDATE users SET ban_time = -1 WHERE id = ?", (user_id,))
+
+                    # Оповощение об окончании срока бана
+                    user_name = await chat_db.get_mention_user(user_id, 1)
+                    await bp.write_msg(chat_db.peer_id, f"❗ У {user_name} закончился срок бана. "
+                                                        f"Можно пригласить его в беседу")
+                    is_allowed_messages = await bp.api.messages.is_messages_from_group_allowed(GROUP_ID, user_id)
+                    if is_allowed_messages:
+                        chat_name = (await bp.api.messages.get_conversations_by_id([chat_db.peer_id]))[
+                            0].chat_settings.title
+                        user_name = await chat_db.get_mention_user(user_id, 0)
+                        await bp.write_msg(user_id, f"❗ {user_name}, у вас закончился срок бана в беседе {chat_name}")
+
+                if 0 < mute < time.time():
+                    await chat_db.sql.execute("UPDATE users SET mute_time = -1 WHERE id = ?", (user_id,))
+
+                    # Оповощение об окончании срока мута
+                    await chat_db.sql.execute("SELECT ban_time FROM users WHERE id = ?", (user_id,))
+                    state = (await chat_db.sql.fetchone())[0]
+                    if state == -1:
+                        user_name = await chat_db.get_mention_user(user_id, 0)
+                        await bp.write_msg(chat_db.peer_id, f"❗ {user_name},"
+                                                            f" срок мута закончен. Вы можете свободно говорить",
+                                           disable_mentions=False)
+
+            await chat_db.sql.execute("SELECT id, to_time FROM warns")
+            warns = await chat_db.sql.fetchall()
+            for warn_id, to_time in warns:
+                if 0 < to_time < time.time():
+                    await chat_db.sql.execute("DELETE FROM warns WHERE id = ?", (warn_id,))
+                    await chat_db.sql.execute("vacuum")
+
+                    state = (await chat_db.sql.fetchone())[0]
+                    if state == -1:
+                        await chat_db.sql.execute("SELECT user_id FROM warns WHERE id = ?", (warn_id,))
+                        user_id = (await chat_db.sql.fetchone())[0]
+                        user_name = await chat_db.get_mention_user(user_id, 0)
+                        await bp.write_msg(chat_db.peer_id, f"❗ {user_name}, срок одного из ваших предупреждений истёк",
+                                           disable_mentions=False)
+
             await chat_db.db.commit()
+
+        await asyncio.sleep(0.2)

@@ -1,4 +1,4 @@
-import aiosqlite3
+import aiosqlite
 import asyncio
 from datetime import datetime
 from config import MY_PEERS
@@ -7,8 +7,8 @@ from config import MY_PEERS
 class MainDB:
 
     async def connection(self):
-        self.db: aiosqlite3.Connection = await aiosqlite3.connect("database.db")
-        self.sql: aiosqlite3.Cursor = await self.db.cursor()
+        self.db: aiosqlite.Connection = await aiosqlite.connect("database.db")
+        self.sql: aiosqlite.Cursor = await self.db.cursor()
         await self.sql.execute("CREATE TABLE IF NOT EXISTS chats (chat_id INTEGER, hello_msg TEXT,"
                                " bye_msg TEXT, UNIQUE ('chat_id') ON CONFLICT IGNORE)")
         await self.sql.execute("CREATE TABLE IF NOT EXISTS stats (date DATE UNIQUE, income_messages INTEGER,"

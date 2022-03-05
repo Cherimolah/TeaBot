@@ -1,14 +1,18 @@
-import aiosqlite3
+import aiosqlite
 from vkbottle_types.responses.messages import MessagesGetConversationMembers
 from utils.vkscripts import get_cases_users
+from blueprints.blueprint import bp
+import time
+from utils.parsing import parse_unix_to_date
+from vkbottle.bot import Message
 
 
 class ChatDB:
     async def connect(self, chat_id):
-        self.db: aiosqlite3.Connection = await aiosqlite3.connect(f"chats/{chat_id}.db")
-        self.sql: aiosqlite3.Cursor = await self.db.cursor()
+        self.db: aiosqlite.Connection = await aiosqlite.connect(f"chats/{chat_id}.db")
+        self.sql: aiosqlite.Cursor = await self.db.cursor()
         self.chat_id = chat_id
-        self.peer_id = chat_id + 2e9
+        self.peer_id = chat_id + 2000000000
         return self
 
     async def insert_users(self, members_dict):
@@ -53,10 +57,10 @@ class ChatDB:
     async def create(self, chat_id: int, members_response: MessagesGetConversationMembers):
         members = members_response.items
 
-        self.db: aiosqlite3.Connection = await aiosqlite3.connect(f"chats/{chat_id}.db")
-        self.sql: aiosqlite3.Cursor = await self.db.cursor()
+        self.db: aiosqlite.Connection = await aiosqlite.connect(f"chats/{chat_id}.db")
+        self.sql: aiosqlite.Cursor = await self.db.cursor()
         self.chat_id = chat_id
-        self.peer_id = chat_id + 2e9
+        self.peer_id = chat_id + 2000000000
 
         await self.sql.execute("CREATE TABLE IF NOT EXISTS users (id INT, name TEXT, surname TEXT, from_name TEXT,"
                                " from_surname TEXT, to_name TEXT, to_surname TEXT, naming TEXT, surnaming TEXT,"
@@ -67,7 +71,8 @@ class ChatDB:
                                " UNIQUE ('id') ON CONFLICT IGNORE)")
         await self.sql.execute("CREATE TABLE IF NOT EXISTS groups (id INT, name TEXT, screen_name TEXT, admin INT, "
                                "ban_time INT, join_date INT, invited_by INT, UNIQUE ('id') ON CONFLICT IGNORE)")
-        await self.sql.execute("CREATE TABLE IF NOT EXISTS warns (user_id INT UNIQUE, from_user_id INT, to_time INT)")
+        await self.sql.execute("CREATE TABLE IF NOT EXISTS warns (id INTEGER PRIMARY KEY AUTOINCREMENT, "
+                               "user_id INT, from_user_id INT, to_time INT)")
 
         users_count = 0
         groups_count = 0
@@ -86,5 +91,77 @@ class ChatDB:
 
         await self.insert_groups(members_dict, members_response)
         await self.insert_users(members_dict)
+        await self.db.commit()
+        return self
+
+    async def get_name_user(self, user_id: int, name_case: int) -> str:
+        if user_id < 0:
+            await self.sql.execute("SELECT name FROM groups WHERE id = ?", (user_id,))
+            return (await self.sql.fetchone())[0]
+        await self.sql.execute("SELECT nickname FROM users WHERE id = ?", (user_id,))
+        nickname = (await self.sql.fetchone())[0]
+        if nickname is not None:
+            return nickname
+        if name_case == 0:
+            await self.sql.execute("SELECT name, surname FROM users WHERE id = ?", (user_id,))
+        elif name_case == 1:
+            await self.sql.execute("SELECT from_name, from_surname FROM users WHERE id = ?", (user_id,))
+        elif name_case == 2:
+            await self.sql.execute("SELECT to_name, to_surname FROM users WHERE id = ?", (user_id,))
+        elif name_case == 3:
+            await self.sql.execute("SELECT naming, surnaming FROM users WHERE id = ?", (user_id,))
+        elif name_case == 4:
+            await self.sql.execute("SELECT by_name, by_surname FROM users WHERE id = ?", (user_id,))
+        elif name_case == 5:
+            await self.sql.execute("SELECT about_name, about_surname FROM users WHERE id = ?", (user_id,))
+        res = await self.sql.fetchone()
+        return f"{res[0]} {res[1]}"
+
+    async def get_mention_user(self, user_id: int, name_case: int) -> str:
+        name = await self.get_name_user(user_id, name_case)
+        return f"[id{user_id}|{name}]"
+
+    async def is_user_in_chat(self, user_id: int) -> bool:
+        await self.sql.execute("SELECT ban_time FROM users WHERE id = ?", (user_id,))
+        return (await self.sql.fetchone())[0] == -1
+
+    async def is_admin_user(self, user_id: int) -> bool:
+        await self.sql.execute("SELECT admin FROM users WHERE id = ?", (user_id,))
+        return (await self.sql.fetchone())[0] > 0
+
+    async def set_warn(self, user_id: int, from_user_id: int, to_time: int, m: Message):
+
+        if user_id < 0:
+            await bp.reply_msg(m, "🙅 Группам предупреждения не выдаются")
+            return
+
+        if not await self.is_user_in_chat(user_id):
+            await bp.reply_msg(m, "🙅 Пользователя нет в беседе")
+            return
+
+        if from_user_id == 0:
+            from_user_name = "автоматическая выдача предупреждений"
+        else:
+            from_user_name = await self.get_mention_user(from_user_id, 1)
+
+        await self.sql.execute("INSERT INTO warns (user_id, from_user_id, to_time) VALUES (?, ?, ?)",
+                               (user_id, from_user_id, to_time))
+        user_name = await self.get_mention_user(user_id, 0)
+        await self.sql.execute("SELECT COUNT(*) FROM warns WHERE user_id = ?", (user_id,))
+        count = (await self.sql.fetchone())[0]
+        await bp.reply_msg(m, f"⚠ {user_name}, вам выдано предупрждение до "
+                              f"[{parse_unix_to_date(time.time() + 2592000)}] "
+                              f"от {from_user_name}\n"
+                              f"Всего предупреждений {count}/5", disable_mentions=False)
+
+        if count >= 5:
+            if await self.is_admin_user(user_id):
+                await bp.reply_msg(m, f"🚫 {user_name}, у вас достигнут лимит предупреждений, но я не могу "
+                                      f"вас исключить из-за настроек беседы", disable_mentions=False)
+            else:
+                await bp.reply_msg(m, f"🚫 {user_name}, вы были исключены из беседы за достижение лимита предупреждений",
+                                   disable_mentions=False)
+                await bp.api.messages.remove_chat_user(self.chat_id, member_id=user_id)
+                await self.sql.execute("DELETE FROM warns WHERE user_id = ?", (user_id,))
         await self.db.commit()
 
