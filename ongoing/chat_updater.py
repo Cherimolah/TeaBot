@@ -9,6 +9,7 @@ from db.chat_database import ChatDB
 
 
 async def update_chats() -> NoReturn:
+
     while True:
 
         # Получение списка ответов от вк актульной информации об участниках беседы
@@ -173,5 +174,6 @@ async def update_chats() -> NoReturn:
                                            disable_mentions=False)
 
             await chat_db.db.commit()
+            await chat_db.db.close()
 
         await asyncio.sleep(0.2)

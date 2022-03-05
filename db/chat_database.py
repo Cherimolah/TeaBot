@@ -149,7 +149,7 @@ class ChatDB:
         user_name = await self.get_mention_user(user_id, 0)
         await self.sql.execute("SELECT COUNT(*) FROM warns WHERE user_id = ?", (user_id,))
         count = (await self.sql.fetchone())[0]
-        await bp.reply_msg(m, f"⚠ {user_name}, вам выдано предупрждение до "
+        await bp.reply_msg(m, f"⚠ {user_name}, вам выдано предупрждение "
                               f"[{parse_unix_to_date(time.time() + 2592000)}] "
                               f"от {from_user_name}\n"
                               f"Всего предупреждений {count}/5", disable_mentions=False)
