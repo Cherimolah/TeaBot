@@ -119,7 +119,7 @@ class ChatDB:
 
     async def get_mention_user(self, user_id: int, name_case: int) -> str:
         name = await self.get_name_user(user_id, name_case)
-        return f"[id{user_id}|{name}]"
+        return f"[{'id' if user_id > 0 else 'club'}{user_id if user_id > 0 else -user_id}|{name}]"
 
     async def is_user_in_chat(self, user_id: int) -> bool:
         await self.sql.execute("SELECT ban_time FROM users WHERE id = ?", (user_id,))

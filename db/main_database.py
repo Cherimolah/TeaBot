@@ -13,6 +13,8 @@ class MainDB:
                                " bye_msg TEXT, UNIQUE ('chat_id') ON CONFLICT IGNORE)")
         await self.sql.execute("CREATE TABLE IF NOT EXISTS stats (date DATE UNIQUE, income_messages INTEGER,"
                                " outcome_messages INTEGER, edited_messages INTEGER, outcome_event_answers INTEGER)")
+        await self.sql.execute("CREATE TABLE IF NOT EXISTS rp_commands (command TEXT, emoji TEXT, action TEXT, "
+                               "wom_action TEXT, specify TEXT, name_case INT, UNIQUE ('command') ON CONFLICT IGNORE)")
         await self.db.commit()
         return self
 
