@@ -9,8 +9,8 @@ from utils.parsing_users import get_id_mention_from_message
 from middlewares.registration import registered_chats
 
 
-mention_regex = re.compile(r"^\[(?P<type>id|club|public)(?P<id>\d*)\|(?P<text>.+)\] ")
-link_regex = re.compile(r"^https:/(?P<type>/|/m.)vk.com/(?P<screen_name>\w*) ")
+mention_regex = re.compile(r"^\[(?P<type>id|club|public)(?P<id>\d*)\|(?P<text>.+)\]")
+link_regex = re.compile(r"^https:/(?P<type>/|/m.)vk.com/(?P<screen_name>\w*)")
 
 
 class RPCommandRule(ABCRule, ABC):
@@ -19,11 +19,12 @@ class RPCommandRule(ABCRule, ABC):
 
     async def check(self, event: Message):
         msg_text = event.text.lower().replace("\n", " ")
-        return re.search(self.pattern, event.text) is not None
+        return re.search(self.pattern, msg_text) is not None
 
 
 async def add_rp_commands():
-    commands = [x[0] for x in await (await main_db.sql.execute("SELECT command FROM rp_commands")).fetchall()]
+    commands = [x[0] for x in await (await main_db.sql.execute("SELECT command FROM rp_commands ORDER BY "
+                                                               "ROWID")).fetchall()]
     for com in commands:
         @bp.on.chat_message(RPCommandRule(com))
         async def role_play_command(m: Message):
@@ -35,11 +36,12 @@ async def add_rp_commands():
                 await bp.reply_msg(m, "🙅 Пользователь отсутствует в беседе")
                 return
             msg_text = m.text.lower().replace("\n", " ")
-            rp_command = ""
             for command in commands:
-                if msg_text.startswith(command):
+                if re.search(fr"^{command}$", msg_text) is not None or re.search(fr"^{command} ", msg_text) is not None:
                     rp_command = command
                     break
+            else:
+                return
             chat_db = registered_chats[m.chat_id]
             sex = (await (await chat_db.sql.execute("SELECT sex FROM users WHERE id = ?", (m.from_id,))).fetchone())[0]
             if sex == 2:
