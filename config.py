@@ -14,7 +14,7 @@ PASSWORD = os.environ.get('PG_PASSWORD')
 DATABASE = os.environ.get('DATABASE')
 MY_PEERS = list(map(int, os.environ.get('MY_PEERS').split(",")))
 GROUP_ID = int(os.environ.get('GROUP_ID'))
-ADMIN_ID = os.environ.get('ADMIN_ID')
+ADMIN_ID = int(os.environ.get('ADMIN_ID'))
 rangnames = [
     "«Без ранга»", "«Принцесса Нури (🌟)»", "«Ahmad Tea (🌟 🌟)»", "«Curtis (🌟 🌟 🌟)»", "«Tess (🌟 🌟 🌟 🌟)»",
     "«Greinfield (🌟 🌟 🌟 🌟 🌟)»"
