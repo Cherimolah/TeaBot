@@ -27,11 +27,16 @@ async def handle_callback(request: Request, background_task: BackgroundTasks):
     except:
         return Response("not today", status_code=403)
 
+    event = await db.select([db.Event.event_id]).where(db.Event.event_id == data['event_id']).gino.scalar()
+    if event:  # Event is stored
+        return Response('ok')
+
     if data["type"] == "confirmation" and abs(data['group_id']) == abs(GROUP_ID):
         return Response(confirmation_code)
 
     if data["secret"] == secret_key:
         background_task.add_task(bot.process_event, data)
+        await db.Event.create(event_id=data['event_id'])
     return Response("ok")
 
 

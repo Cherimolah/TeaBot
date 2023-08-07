@@ -162,6 +162,13 @@ class MyDatabase(Gino):
 
         self.Sticker = Sticker
 
+        class Event(self.Model):
+            __tablename__ = 'events'
+
+            event_id = Column(Text, unique=True)
+
+        self.Event = Event
+
     async def connect(self):
         """Подключение к базе данных"""
         await self.set_bind(f"postgresql://{USER}:{PASSWORD}@{HOST}/{DATABASE}")

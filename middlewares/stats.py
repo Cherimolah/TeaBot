@@ -1,5 +1,3 @@
-import traceback
-
 from vkbottle.dispatch.middlewares import BaseMiddleware
 from abc import ABC
 from vkbottle.bot import Message
