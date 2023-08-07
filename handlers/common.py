@@ -234,6 +234,8 @@ async def check_url(m: Message, url: str = None):
     if url is None:
         await bot.reply_msg(m, "🤷‍♂️ Нужно добавить ссылку. Пример: «скрин https://vk.com»")
         return
+    if not url.startswith("https://") or not url.startswith("http://"):
+        url = f"https://{url}"
     await bot.reply_msg(m, "🎥 Чайник достаёт свой фотоаппарат")
     from loader import browser
     page = await browser.newPage()
