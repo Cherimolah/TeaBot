@@ -10,11 +10,11 @@ from utils.scheduler import AsyncIOScheduler, Interval, Cron
 scheduler = AsyncIOScheduler()
 
 
-@scheduler.add_task(Cron(hour=23, minute=59, second=59))
+@scheduler.add_task(Cron(hour=12, minute=38, second=59))
 async def stats_notification():
     day = datetime.now().date()
-    stats = await db.StatsTotal.get(datetime.now().date())
-    if stats is None:
+    stats = await db.select([*db.StatsTotal]).where(db.StatsTotal.date == day).gino.first()
+    if not stats:
         await bot.write_msg(ADMIN_ID, f"За {day.strftime('%d.%m.%Y')} статистики нет")
     else:
         await bot.write_msg(ADMIN_ID, f"Статистика за {day.strftime('%d.%m.%Y')}:\n\n"

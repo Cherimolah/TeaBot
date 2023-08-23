@@ -16,17 +16,12 @@ class Cron(BaseTypeScheduler, ABC):
         self.hour = hour
         self.minute = minute
         self.second = second
-        self._triggered = False
 
     def count_delta(self) -> int:
         now = datetime.datetime.now()
         date = datetime.datetime(now.year, now.month, now.day, self.hour, self.minute, self.second)
-        if self._triggered:
-            self._triggered = False
-            return (now - (date + datetime.timedelta(days=1))).seconds
         if now > date:
             date = date + datetime.timedelta(days=1)
-        self._triggered = True
         return (date - now).seconds
 
 
@@ -77,6 +72,7 @@ class AsyncIOScheduler:
                 while True:
                     await asyncio.sleep(type_.count_delta())
                     await func(*args, *kwargs)
+                    await asyncio.sleep(1)
 
             self.tasks.append(decorator)
 
