@@ -171,7 +171,7 @@ class MyDatabase(Gino):
 
     async def connect(self):
         """Подключение к базе данных"""
-        await self.set_bind(f"postgresql://{USER}:{PASSWORD}@{HOST}/{DATABASE}")
+        await self.set_bind(f"postgresql://{USER}:{PASSWORD}@{HOST}/{DATABASE}", echo='debug')
         await self.gino.create_all()
 
     async def is_chat_registered(self, chat_id: int) -> bool:
@@ -229,8 +229,8 @@ class MyDatabase(Gino):
 
     async def is_user_in_chat(self, user_id: int, chat_id: int) -> bool:
         """Проверяет находится ли пользователь в чате"""
-        return await self.UserToChat.select('in_chat').where(
-            and_(self.UserToChat.user_id == user_id and self.UserToChat.chat_id == chat_id)
+        return await self.select([self.UserToChat.in_chat]).where(
+            and_(self.UserToChat.user_id == user_id, self.UserToChat.chat_id == chat_id)
         ).gino.scalar()
 
     async def add_punishment(self, type_pun: Punishments, to_time: int, chat_id: int, from_user_id: int,

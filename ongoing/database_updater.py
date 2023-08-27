@@ -12,9 +12,14 @@ from utils.views import get_names_user, waiting_punishment
 
 
 async def start_update() -> NoReturn:
+    return
     while True:
-        await _update_users()
-        await _update_users_in_chats()
+        return
+        try:
+            await _update_users()
+            await _update_users_in_chats()
+        except Exception as e:
+            pass
 
 
 async def _update_users() -> NoReturn:
