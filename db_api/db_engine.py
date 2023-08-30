@@ -52,6 +52,7 @@ class MyDatabase(Gino):
             kombucha = Column(DECIMAL, nullable=False, default=0)
             kombucha_date = Column(TIMESTAMP, default=datetime.now())
             ext_nick = Column(Boolean, default=False)
+            screen_plus = Column(Boolean, default=False)
             balance = Column(Integer, default=0)
             description = Column(VARCHAR(256))
             boost_kombucha = Column(Boolean, default=False)
@@ -171,7 +172,7 @@ class MyDatabase(Gino):
 
     async def connect(self):
         """Подключение к базе данных"""
-        await self.set_bind(f"postgresql://{USER}:{PASSWORD}@{HOST}/{DATABASE}", echo='debug')
+        await self.set_bind(f"postgresql://{USER}:{PASSWORD}@{HOST}/{DATABASE}")
         await self.gino.create_all()
 
     async def is_chat_registered(self, chat_id: int) -> bool:

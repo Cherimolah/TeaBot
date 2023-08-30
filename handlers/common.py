@@ -17,12 +17,13 @@ import time
 from bots.uploaders import bot_photo_message_upl
 from sqlalchemy import func
 from sqlalchemy.sql import and_
-from xvfbwrapper import Xvfb
 from utils.views import remember_kombucha
-from pyppeteer import launch
 from pyppeteer.errors import TimeoutError
+from aiohttp import ClientSession, ClientTimeout
+from aiohttp.client_exceptions import ClientConnectionError
 
 setcontext(Context(rounding=ROUND_HALF_UP))
+screen_users = []
 
 
 @bot.on.raw_event(GroupEventType.MESSAGE_EVENT, MessageEvent, PayloadRule({"command": "start"}))
@@ -228,20 +229,36 @@ async def start_game(m: Message):
     )
 
 
-@bot.on.message(Command('скрин'))
-@bot.on.message(Command('скрин', null_args=False, returning_args=True, args_names=('url',)))
-async def check_url(m: Message, url: str = None):
-    if url is None:
-        await bot.reply_msg(m, "🤷‍♂️ Нужно добавить ссылку. Пример: «скрин https://vk.com»")
+@bot.on.message(Command('скрин+'))
+@bot.on.message(Command('скрин+', null_args=False, returning_args=True, args_names=('url',)))
+async def screen_base(m: Message, url: str = None):
+    if m.from_id in screen_users:
+        await bot.reply_msg(m, "⏳ У тебя уже грузится скрин. По одному, пожалуйста")
         return
-    if not url.startswith("https://") or not url.startswith("http://"):
+    screen_plus = await db.select([db.User.screen_plus]).where(db.User.user_id == m.from_id).gino.scalar()
+    if not screen_plus:
+        await bot.reply_msg(m, "🚫 Команда доступна для тех, у кого есть опция скрин+\n\n"
+                               "Напиши «купить скрин+»")
+        return
+    if url is None:
+        await bot.reply_msg(m, "🤷‍♂️ Нужно добавить ссылку. Пример: «скринб https://vk.com»")
+        return
+    if not url.startswith("https://") and not url.startswith("http://"):
         url = f"https://{url}"
     await bot.reply_msg(m, "🎥 Чайник достаёт свой фотоаппарат")
+    async with ClientSession(timeout=ClientTimeout(5)) as session:
+        try:
+            response = await session.get(url)
+        except ClientConnectionError:
+            await bot.reply_msg(m, "❌ Адрес недоступен!")
+        if not str(response.status).startswith('2'):
+            await bot.reply_msg(m, "❌ Сервер вернул неуспешный ответ!")
+            return
     from loader import browser
     page = await browser.newPage()
     await page.setViewport({'width': 1920, 'height': 1080})
     try:
-        await page.goto(url, {"timeout": 3*1000})
+        await page.goto(url, {"timeout": 15*1000, 'waitUntil': 'networkidle0'})
     except TimeoutError:
         pass
     await page.screenshot({'path': 'screenshot.png'})
@@ -249,6 +266,23 @@ async def check_url(m: Message, url: str = None):
     attachment = await bot_photo_message_upl.upload('screenshot.png')
     os.remove("screenshot.png")
     await bot.reply_msg(m, "Держи скрин сайта", attachment=attachment)
+
+
+@bot.on.message(Command('скрин'))
+@bot.on.message(Command('скрин', null_args=False, returning_args=True, args_names=('url',)))
+async def screen_url(m: Message, url: str = None):
+    if url is None:
+        await bot.reply_msg(m, "🤷‍♂️ Нужно добавить ссылку. Пример: «скрин https://vk.com»")
+        return
+    await bot.reply_msg(m, "🎥 Чайник достаёт свой фотоаппарат")
+    async with ClientSession() as session:
+        response = await session.get(f"https://mini.s-shot.ru/1920x1080/1024/png/?{url}")
+        photo = await response.read()
+        attachment = await bot_photo_message_upl.upload(photo)
+        await bot.reply_msg(m, "🔍 Держи скрин сайта\n\nНекоторые сайты не отображаются с прокси сервера. "
+                               "Для отправки запросов с основного российского сервера используйте команду "
+                               "«скринб https://example.com»",
+                            attachment=attachment)
 
 
 @bot.on.message(CommandWithAnyArgs("инфа "))

@@ -248,10 +248,10 @@ async def get_registration_user(m: Message, to_user_id: int):
     register_date = await get_register_date(to_user_id)
     user = (await bot.api.users.get(to_user_id))[0]
     if register_date is None:
-        await bot.reply_msg(m, f"📄 Дату регистрации [id{user[0].id}|{user[0].first_name} {user[0].last_name}] "
+        await bot.reply_msg(m, f"📄 Дату регистрации [id{user.id}|{user.first_name} {user.last_name}] "
                               f"установить не удалось")
         return
-    await bot.reply_msg(m, f"📄 Дата регистрации [id{user[0].id}|{user[0].first_name} {user[0].last_name}] "
+    await bot.reply_msg(m, f"📄 Дата регистрации [id{user.id}|{user.first_name} {user.last_name}] "
                           f"{register_date.strftime(DATE_PARSING)}")
 
 

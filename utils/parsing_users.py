@@ -74,7 +74,7 @@ async def get_register_date(user_id: int) -> Optional[datetime]:
 
 async def parse_user_cases(users_ids: list):
     "Получает пользователей со всеми падежами без лимита на 999 пользователей"
-    users_ids_chunks = list(chunks(200, users_ids))  # Разбиваем по 999, т.к. вк за раз больше не принимает
+    users_ids_chunks = list(chunks(999, users_ids))  # Разбиваем по 999, т.к. вк за раз больше не принимает
     # Инфа о пользователях разбитая на чанки
     users_chunks_responses = [await get_cases_users(x) for x in users_ids_chunks]
     # Разворачиваем двумерный список обратно в одномерный

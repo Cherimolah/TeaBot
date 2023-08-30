@@ -12,7 +12,7 @@ from loader import bot
 class MutedUserMiddleware(BaseMiddleware[Message], ABC):
 
     async def pre(self) -> None:
-        if self.event.from_id > 0 and self.event.peer_id > 2000000000:
+        if self.event.from_id > 0 and self.event.peer_id > 2000000000 and await db.User.get(self.event.from_id):
             mute = await (db.select([db.User.user_id, db.User.names[2], db.User.nickname, db.Punishment.closing_at])
                           .select_from(db.User.join(db.Punishment, db.Punishment.from_user_id == db.User.user_id))
                           .where(and_(db.Punishment.type == 1, db.Punishment.to_user_id == self.event.from_id,

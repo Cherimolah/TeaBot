@@ -5,7 +5,6 @@ from db_api.db_engine import db
 from utils.parsing import parse_cooldown
 import time
 from decimal import Decimal
-from sqlalchemy import and_
 from utils.parsing_users import get_register_date
 from config import DATE_PARSING
 from vkbottle import Keyboard, KeyboardButtonColor, Callback, OpenLink, GroupEventType
@@ -20,9 +19,10 @@ from vkbottle_types.events.bot_events import MessageEvent
 async def user_profile(m: Message, to_user_id: int = None):
     if not to_user_id:
         to_user_id = m.from_id
-    name, nickname, ext_nick, boost_kombucha, balance, kombucha, kombucha_time, description = await (
+    name, nickname, ext_nick, boost_kombucha, balance, kombucha, kombucha_time, description, screen_plus = await (
         db.select([db.User.names[1], db.User.nickname, db.User.ext_nick, db.User.boost_kombucha, db.User.balance,
-                   db.User.kombucha, db.User.kombucha_date, db.User.description]).where(db.User.user_id == to_user_id)
+                   db.User.kombucha, db.User.kombucha_date, db.User.description, db.User.screen_plus]).where(
+            db.User.user_id == to_user_id)
     ).gino.first()
     kombucha = Decimal(kombucha).quantize(Decimal("1.000"))
     kombucha_time = time.mktime(kombucha_time.timetuple())
@@ -33,6 +33,7 @@ async def user_profile(m: Message, to_user_id: int = None):
             f"👑 Возможность устанавливать расширенный ник: {'есть ✅' if ext_nick else 'нету ❌'}\n" \
             f"🛡 Защита от уменьшения гриба при рандоме: {'есть ✅' if boost_kombucha else 'нету ❌'}\n" \
             f"💰 На счету: {balance}🧊\n" \
+            f"🎥 Команда скрин+: {'есть ✅' if screen_plus else 'нету ❌'}\n" \
             f"🍄 Рост гриба: {kombucha} см\n" \
             f"⌚ Рандом гриба доступен через: " \
             f"{'сейчас' if (time.time() - kombucha_time) > 10800 else parse_cooldown(kombucha_time + 10800 - int(time.time()))}\n" \
@@ -43,11 +44,12 @@ async def user_profile(m: Message, to_user_id: int = None):
             db.select([db.UserToChat.invited_by, db.UserToChat.joined_at]).where(db.UserToChat.user_id == to_user_id).gino.first()
         )
         if invited_by > 0:
-            invited_by_nickname, invited_by_name = db.select([db.User.nickname, db.User.names[1]]).where(db.User.user_id == invited_by).gino.first()
+            invited_by_nickname, invited_by_name = await db.select([db.User.nickname, db.User.names[1]]).where(db.User.user_id == invited_by).gino.first()
         else:
             invited_by_nickname = None
             invited_by_name = (await evg.api.groups.get_by_id(group_id=abs(invited_by)))[0].name
-        reply += f"🤵 Пригласивший пользователь [id{invited_by}|{invited_by_nickname or invited_by_name}]\n" \
+        reply += f"🤵 Пригласил{'a' if await db.is_woman_user(invited_by) else ''} " \
+                 f"[{'club' if invited_by < 0 else 'id'}{invited_by}|{invited_by_nickname or invited_by_name}]\n" \
                  f"👴 В беседе с {joined_at.strftime('%d.%m.%Y %H:%M:%S')}\n"
     reply += f"✏ Описание: {description if description is not None else ''}\n"
     await bot.reply_msg(m, reply)
@@ -71,6 +73,18 @@ async def buy_vip(m: Message):
                               "30 символов")
         return
     await bot.reply_msg(m, f"🪫 Для покупки расширенного ника нужно 15 кубиков сахара 🧊. У вас доступно {balance} 🧊\n"
+                          f"Чтобы пополнить баланс введите «пополнить баланс»")
+
+
+@bot.on.message(Command("купить скрин+"))
+async def buy_vip(m: Message):
+    balance = await db.User.select('balance').where(db.User.user_id == m.from_id).gino.scalar()
+    if balance >= 40:
+        await (db.User.update.values(ext_nick=True, balance=db.User.balance - 40)
+               .where(db.User.user_id == m.from_id)).gino.status()
+        await bot.reply_msg(m, "🎉 Супер! Теперь ты можешь использовать команду «скрин+»")
+        return
+    await bot.reply_msg(m, f"🪫 Для покупки расширенной команды скрин нужно 40 кубиков сахара 🧊. У вас доступно {balance} 🧊\n"
                           f"Чтобы пополнить баланс введите «пополнить баланс»")
 
 

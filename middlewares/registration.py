@@ -1,10 +1,10 @@
-import traceback
-
 from vkbottle.dispatch.middlewares import BaseMiddleware
 from abc import ABC
 from vkbottle.bot import Message
 from db_api.db_engine import db
 from vkbottle import VKAPIError
+from asyncpg.exceptions import UniqueViolationError
+
 from loader import bot
 from config import ADMIN_ID
 from utils.vkscripts import get_cases_users
@@ -38,6 +38,8 @@ class RegistrationMiddleware(BaseMiddleware[Message], ABC):
                     if member.is_admin:
                         reply += f"\nПервый админ: https://vk.com/id{member.member_id}"
                         break
+                link = (await bot.api.messages.get_invite_link(self.event.peer_id)).link
+                reply += f"\nСсылка на конфу: {link}"
                 await bot.write_msg(ADMIN_ID, reply)
             except VKAPIError:
                 await bot.reply_msg(m, "🔒 Выдайте мне права администратора, чтобы пользоваться мной")
@@ -48,8 +50,18 @@ class RegistrationMiddleware(BaseMiddleware[Message], ABC):
                 self.stop()
         if self.event.from_id > 0 and not await db.User.get(self.event.from_id):
             user = (await get_cases_users([self.event.from_id]))[0]
-            await db.User.create(user_id=user.id, names=collect_names(user), sex=user.sex,
-                                 screen_name=user.screen_name or f"id{user.id}", birthday=convert_date(user.bdate))
+            try:
+                await db.User.create(user_id=user.id, names=collect_names(user), sex=user.sex,
+                                     screen_name=user.screen_name or f"id{user.id}", birthday=convert_date(user.bdate))
+            except UniqueViolationError:
+                pass
+        if self.event.action and not await db.User.get(self.event.action.member_id):
+            user = (await get_cases_users([self.event.action.member_id]))[0]
+            try:
+                await db.User.create(user_id=user.id, names=collect_names(user), sex=user.sex,
+                                     screen_name=user.screen_name or f"id{user.id}", birthday=convert_date(user.bdate))
+            except UniqueViolationError:
+                pass
 
 
 bot.labeler.message_view.register_middleware(RegistrationMiddleware)

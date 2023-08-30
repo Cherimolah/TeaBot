@@ -1,4 +1,5 @@
 import datetime
+import time
 from typing import NoReturn
 from utils.vkscripts import get_conversations_members
 from utils.views import send_goodbye, send_hello
@@ -6,34 +7,29 @@ from db_api.db_engine import db
 import asyncio
 from utils.parsing import collect_names, convert_date
 from utils.parsing_users import parse_user_cases
-from sqlalchemy import and_, not_
+from sqlalchemy import and_, not_, update, bindparam
 from sqlalchemy.dialects.postgresql import insert
 from utils.views import get_names_user, waiting_punishment
 
 
-async def start_update() -> NoReturn:
-    return
-    while True:
-        return
-        try:
-            await _update_users()
-            await _update_users_in_chats()
-        except Exception as e:
-            pass
-
-
-async def _update_users() -> NoReturn:
+async def update_users() -> NoReturn:
     """Обновляет имена пользователей, пол и короткое имя"""
     user_ids = [x[0] for x in await db.select([db.User.user_id]).gino.all()]
     users_data = await parse_user_cases(user_ids)
-    for udata in users_data:
-        await (db.User.update.values(names=collect_names(udata), sex=udata.sex,
-                                     screen_name=udata.screen_name or f"id{udata.id}",
-                                     birthday=convert_date(udata.bdate))
-               .where(db.User.user_id == udata.id).gino.status())
+    udata = [dict(names=collect_names(udata), sex=udata.sex,
+                  screen_name=udata.screen_name or f"id{udata.id}",
+                  birthday=convert_date(udata.bdate), user_id=udata.id) for udata in users_data]
+    stmt = update(db.User).where(db.User.user_id == bindparam('user_id')).values({
+        "names": bindparam('names'),
+        "sex": bindparam("sex"),
+        "screen_name": bindparam('screen_name'),
+        "birthday": bindparam('birthday'),
+        "user_id": bindparam('user_id')
+    })
+    await db.all(stmt, udata)
 
 
-async def _update_users_in_chats() -> NoReturn:
+async def update_users_in_chats() -> NoReturn:
     """Обновляет информацию о уровнях админки пользователей и состоянии в беседе"""
     peer_ids = [x[0] + 2000000000 for x in await db.select([db.Chat.chat_id]).gino.all()]
     for i in range(0, len(peer_ids), 25):
@@ -47,12 +43,14 @@ async def _update_users_in_chats() -> NoReturn:
                 and_(db.UserToChat.chat_id == chat_id, db.UserToChat.in_chat.is_(True))
             ).gino.all()}
             users_found = list(members_ids - users_in_db)
-            user_cases = await parse_user_cases(users_found)
-            users_data = [{"names": get_names_user(i1, user_cases), "sex": bool(user_cases[i1].sex),
-                           "screen_name": user_cases[i1].screen_name if user_cases[i1].screen_name else f"id{users_found[i1]}",
-                           "user_id": users_found[i1]} for i1 in range(len(users_found))
-                          ]
-            await insert(db.User).values(users_data).on_conflict_do_nothing().gino.scalar()
+            if users_found:
+                user_cases = await parse_user_cases(users_found)
+                users_data = [{"names": get_names_user(i1, user_cases), "sex": bool(user_cases[i1].sex),
+                               "screen_name": user_cases[i1].screen_name if user_cases[
+                                   i1].screen_name else f"id{users_found[i1]}",
+                               "user_id": users_found[i1]} for i1 in range(len(users_found))
+                              ]
+                await insert(db.User).values(users_data).on_conflict_do_nothing().gino.scalar()
             users_lost = list(users_in_db - members_ids)
             is_group = await db.select([db.Chat.is_group]).where(db.Chat.chat_id == chat_id).gino.scalar()
             for user_id in users_lost:

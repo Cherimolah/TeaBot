@@ -5,9 +5,9 @@ import asyncio
 import uvicorn
 
 from config import ADMIN_ID, DEBUG
-from loader import bot, app
+from loader import bot, app, on_startup
 from ongoing.schedule import scheduler
-from ongoing.database_updater import start_update, load_punisments
+from ongoing.database_updater import update_users, update_users_in_chats, load_punisments
 
 import handlers
 import middlewares
@@ -36,15 +36,18 @@ async def exception(e: Exception):
 @app.on_event("startup")
 async def load_tasks():
     scheduler.start()
-    asyncio.create_task(start_update())
+    # asyncio.create_task(update_users())
+    # asyncio.create_task(update_users_in_chats())
     asyncio.create_task(load_punisments())
 
 
 if __name__ == '__main__':
     if DEBUG:
         scheduler.start()
-        bot.loop.create_task(start_update())
+        # bot.loop.create_task(update_users())
+        # bot.loop.create_task(update_users_in_chats())
         bot.loop_wrapper.on_startup.append(load_punisments())
+        bot.loop_wrapper.on_startup.append(on_startup())
         bot.run_forever()
     else:
         uvicorn.run(app, log_level='error')

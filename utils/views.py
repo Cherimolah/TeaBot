@@ -4,16 +4,16 @@ import asyncio
 
 from db_api.db_engine import db, Punishments
 from datetime import datetime
-from utils.parsing import parse_unix_to_date, convert_date
+from utils.parsing import parse_unix_to_date
 from vkbottle import VKAPIError
 from loader import bot
-from utils.vkscripts import get_cases_users
 from sqlalchemy import and_
 from vkbottle_types.responses.users import UsersUserFull
-from sqlalchemy.dialects.postgresql import insert
 from utils.parsing_users import get_register_date
 
 from config import GROUP_ID
+
+screenshot_users = []
 
 
 async def set_warn(chat_id: int, from_user_id: int, to_user_id: int, closing_at: int) -> None:
@@ -64,38 +64,30 @@ async def send_goodbye(chat_id: int, user_id: int):
 
 
 async def send_hello(chat_id: int, user_id: int, invited_by: int, send_message=True):
-    user_cases = await get_cases_users([user_id])
-    await insert(db.User).values(
-        {
-            "names": get_names_user(0, user_cases),
-            "screen_name": user_cases[0].screen_name or f"id{user_id}",
-            "sex": user_cases[0].sex,
-            "birthday": convert_date(user_cases[0].bdate)
-        }
-    ).on_conflict_do_nothing().gino.status()
-    if user_id > 0:
-        date_registration = await get_register_date(user_id)
-        if date_registration:
-            user = (await bot.api.users.get(user_id))[0]
-            if (datetime.now() - date_registration).days < 3:
+    if user_id < 0:
+        return
+    date_registration = await get_register_date(user_id)
+    if date_registration:
+        user = (await bot.api.users.get(user_id))[0]
+        if (datetime.now() - date_registration).days < 3:
+            admin = await db.select([db.UserToChat.user_id]).where(
+                and_(db.UserToChat.admin == 2, db.UserToChat.chat_id == chat_id)
+            ).gino.scalar()
+            if not admin:
                 admin = await db.select([db.UserToChat.user_id]).where(
-                    and_(db.UserToChat.admin == 2, db.UserToChat.chat_id == chat_id)
+                    and_(db.UserToChat.admin == 1, db.UserToChat.chat_id == chat_id)
                 ).gino.scalar()
-                if not admin:
-                    admin = await db.select([db.UserToChat.user_id]).where(
-                        and_(db.UserToChat.admin == 1, db.UserToChat.chat_id == chat_id)
-                    ).gino.scalar()
-                if not admin:
-                    admin = await db.select([db.UserToChat.user_id]).where(
-                        db.UserToChat.chat_id == chat_id
-                    ).gino.scalar()
-                await bot.write_msg(chat_id + 2000000000,
-                                   f"📄 С момента регистрации пользователя "
-                                   f"[id{user.id}|{user.first_name} {user.last_name}] "
-                                   f"прошло менее 3 дней, наверняка это бот. Если ты человек можешь написать "
-                                   f"администратору {await db.get_mention_user(admin, 2)}")
-                await bot.api.messages.remove_chat_user(chat_id, member_id=user_id)
-                return
+            if not admin:
+                admin = await db.select([db.UserToChat.user_id]).where(
+                    db.UserToChat.chat_id == chat_id
+                ).gino.scalar()
+            await bot.write_msg(chat_id + 2000000000,
+                               f"📄 С момента регистрации пользователя "
+                               f"[id{user.id}|{user.first_name} {user.last_name}] "
+                               f"прошло менее 3 дней, наверняка это бот. Если ты человек можешь написать "
+                               f"администратору {await db.get_mention_user(admin, 2)}")
+            await bot.api.messages.remove_chat_user(chat_id, member_id=user_id)
+            return
     res = await (db.select([db.User.user_id, db.User.names[2], db.User.nickname, db.Punishment.closing_at])
                  .select_from(db.User.join(db.Punishment, db.Punishment.from_user_id == db.User.user_id))
                  .where(and_(db.Punishment.to_user_id == user_id, db.Punishment.type == 3,
@@ -178,5 +170,3 @@ async def remember_kombucha(user_id: int, delay: float):
     await asyncio.sleep(delay)
     if (await bot.api.messages.is_messages_from_group_allowed(GROUP_ID, user_id)).is_allowed:
         await bot.write_msg(user_id, "⏰ Твой гриб доступен для рандома!")
-
-
