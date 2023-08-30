@@ -40,6 +40,8 @@ async def update_users_in_chats() -> NoReturn:
                     continue
                 chat_id = peer_ids[i + index] - 2000000000
                 members_ids = {x['member_id'] for x in response['items'] if x["member_id"] > 0}
+                if len(members_ids) == 0:
+                    continue
                 users_in_db = {x[0] for x in await db.select([db.UserToChat.user_id]).where(
                     and_(db.UserToChat.chat_id == chat_id, db.UserToChat.in_chat.is_(True))
                 ).gino.all()}
