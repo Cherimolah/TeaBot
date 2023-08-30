@@ -36,16 +36,16 @@ async def exception(e: Exception):
 @app.on_event("startup")
 async def load_tasks():
     scheduler.start()
-    # asyncio.create_task(update_users())
-    # asyncio.create_task(update_users_in_chats())
+    asyncio.create_task(update_users())
+    asyncio.create_task(update_users_in_chats())
     asyncio.create_task(load_punisments())
 
 
 if __name__ == '__main__':
     if DEBUG:
         scheduler.start()
-        # bot.loop.create_task(update_users())
-        # bot.loop.create_task(update_users_in_chats())
+        bot.loop.create_task(update_users())
+        bot.loop.create_task(update_users_in_chats())
         bot.loop_wrapper.on_startup.append(load_punisments())
         bot.loop_wrapper.on_startup.append(on_startup())
         bot.run_forever()
