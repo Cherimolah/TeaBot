@@ -12,7 +12,6 @@ from utils.views import get_names_user, waiting_punishment
 
 
 async def update_users() -> NoReturn:
-    return
     """Обновляет имена пользователей, пол и короткое имя"""
     user_ids = [x[0] for x in await db.select([db.User.user_id]).gino.all()]
     users_data = await parse_user_cases(user_ids)
@@ -30,7 +29,6 @@ async def update_users() -> NoReturn:
 
 
 async def update_users_in_chats() -> NoReturn:
-    return
     """Обновляет информацию о уровнях админки пользователей и состоянии в беседе"""
     peer_ids = [x[0] + 2000000000 for x in await db.select([db.Chat.chat_id]).gino.all()]
     for i in range(0, len(peer_ids), 25):
