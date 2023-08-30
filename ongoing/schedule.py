@@ -1,16 +1,14 @@
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 from loader import bot, evg
 from db_api.db_engine import db
 from config import ADMIN_ID, GROUP_ID
-from aiohttp import ClientSession
-import json
-from bs4 import BeautifulSoup
+import asyncio
 from utils.scheduler import AsyncIOScheduler, Interval, Cron
 
 scheduler = AsyncIOScheduler()
 
 
-@scheduler.add_task(Cron(hour=12, minute=38, second=59))
+@scheduler.add_task(Cron(hour=23, minute=59, second=59))
 async def stats_notification():
     day = datetime.now().date()
     stats = await db.select([*db.StatsTotal]).where(db.StatsTotal.date == day).gino.first()
@@ -55,3 +53,28 @@ async def update_stickers():
         await db.Sticker.create(id=pack['product']['id'], name=pack['product']['title'], price=pack.get("price") or 0)
 
 
+@scheduler.add_task(Cron(hour=15, minute=10, second=30))
+async def congratulation_birthday():
+    user_ids = await db.select([db.User.user_id, db.User.birthday]).where(db.User.birthday.isnot(None)).gino.all()
+    now = date.today()
+    for user_id, birthday in user_ids:
+        if birthday.month == now.month and birthday.day == now.day:
+            chat_ids = [x[0] for x in
+                        await db.select([db.UserToChat.chat_id]).where(db.UserToChat.user_id == user_id).gino.all()]
+            reply = f"🎉🎊 Поздравляем {await db.get_mention_user(user_id, 3)} с Днём Рождения!!\n"
+            if birthday.year != 1800:
+                reply += f"Сегодня тебе исполняется {now.year - birthday.year} лет! "
+            else:
+                reply += "Сегодня тебе исполняется... Та хер его знает сколько тебе исполняется. Поскрывают года " \
+                         "в своих прфилях, а я потом гадать должен! Но, наверное, ты уже "
+                if await db.is_woman_user(user_id):
+                    reply += "взрослая крутая асинхронная тян! "
+                else:
+                    reply += "взрослый крутой асинхронный кун! "
+            reply += "Желаю тебе счастья, здоровья, успехов и всего самого наилучшего! Пей побольше чая и поменьше кофе"
+            for chat_id in chat_ids:
+                await bot.write_msg(chat_id + 2000000000, reply,
+                                    attachment="photo-201071106_457240771_7de9eaa806e40d06be")
+                await asyncio.sleep(0.2)
+            if not chat_ids:
+                await bot.write_msg(user_id, reply, attachment="photo-201071106_457240771_7de9eaa806e40d06be")

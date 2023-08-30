@@ -49,7 +49,7 @@ async def user_profile(m: Message, to_user_id: int = None):
             invited_by_nickname = None
             invited_by_name = (await evg.api.groups.get_by_id(group_id=abs(invited_by)))[0].name
         reply += f"🤵 Пригласил{'a' if await db.is_woman_user(invited_by) else ''} " \
-                 f"[{'club' if invited_by < 0 else 'id'}{invited_by}|{invited_by_nickname or invited_by_name}]\n" \
+                 f"[{'club' if invited_by < 0 else 'id'}{abs(invited_by)}|{invited_by_nickname or invited_by_name}]\n" \
                  f"👴 В беседе с {joined_at.strftime('%d.%m.%Y %H:%M:%S')}\n"
     reply += f"✏ Описание: {description if description is not None else ''}\n"
     await bot.reply_msg(m, reply)
