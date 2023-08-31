@@ -165,7 +165,7 @@ async def kombucha_list_conf(m: Message):
                        .where(and_(db.UserToChat.in_chat.is_(True), db.UserToChat.chat_id == m.chat_id))
                        .order_by(db.User.kombucha.desc()).limit(15).offset(0)).gino.all()
     reply = "📝 Список грибов этой беседы:\n\n"
-    count_users = await db.func.count(db.User.user_id).gino.scalar()
+    count_users = await db.select([func.count(db.UserToChat.user_id)]).where(db.UserToChat.chat_id == m.chat_id).gino.scalar()
     count_pages = get_count_page(count_users, 15)
     if count_users > 15:
         reply += f"Страница 1/{count_pages}\n\n"

@@ -46,8 +46,6 @@ async def update_users_in_chats() -> NoReturn:
                 ).gino.all()}
                 users_found = list(members_ids - users_in_db)
                 users_lost = list(users_in_db - members_ids)
-                if len(members_ids) == 0 or len(users_lost) == len(members_ids):
-                    continue
                 if users_found:
                     user_cases = await parse_user_cases(users_found)
                     users_data = [{"names": get_names_user(i1, user_cases), "sex": bool(user_cases[i1].sex),
