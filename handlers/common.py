@@ -167,7 +167,8 @@ async def kombucha_list_conf(m: Message):
     reply = "📝 Список грибов этой беседы:\n\n"
     count_users = await (db.select([db.func.count()])
                          .where(and_(db.UserToChat.in_chat.is_(True), db.UserToChat.chat_id == m.peer_id - 2000000000))
-                         .gino.scalar())    count_pages = get_count_page(count_users, 15)
+                         .gino.scalar())
+    count_pages = get_count_page(count_users, 15)
     if count_users > 15:
         reply += f"Страница 1/{count_pages}\n\n"
     for i, user_info in enumerate(kombuchas):
