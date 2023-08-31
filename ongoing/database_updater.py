@@ -36,16 +36,18 @@ async def update_users_in_chats() -> NoReturn:
         for i in range(0, len(peer_ids), 25):
             responses = await get_conversations_members(peer_ids[i:i + 25])
             for index, response in enumerate(responses):
+                response, peer_id = response
                 if not response:
                     continue
-                chat_id = peer_ids[i + index] - 2000000000
+                chat_id = peer_id - 2000000000
                 members_ids = {x['member_id'] for x in response['items'] if x["member_id"] > 0}
-                if len(members_ids) == 0:
-                    continue
                 users_in_db = {x[0] for x in await db.select([db.UserToChat.user_id]).where(
                     and_(db.UserToChat.chat_id == chat_id, db.UserToChat.in_chat.is_(True))
                 ).gino.all()}
                 users_found = list(members_ids - users_in_db)
+                users_lost = list(users_in_db - members_ids)
+                if len(members_ids) == 0 or len(users_lost) == len(members_ids):
+                    continue
                 if users_found:
                     user_cases = await parse_user_cases(users_found)
                     users_data = [{"names": get_names_user(i1, user_cases), "sex": bool(user_cases[i1].sex),
@@ -54,7 +56,6 @@ async def update_users_in_chats() -> NoReturn:
                                    "user_id": users_found[i1]} for i1 in range(len(users_found))
                                   ]
                     await insert(db.User).values(users_data).on_conflict_do_nothing().gino.scalar()
-                users_lost = list(users_in_db - members_ids)
                 is_group = await db.select([db.Chat.is_group]).where(db.Chat.chat_id == chat_id).gino.scalar()
                 for user_id in users_lost:
                     await db.UserToChat.update.values(in_chat=False).where(
