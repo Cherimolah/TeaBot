@@ -55,10 +55,10 @@ async def set_boards(event: MessageEvent):
 
     if not await bot.api.groups.is_member(GROUP_ID, event.object.user_id):
         reply += ". Чтобы отключить водяной знак подпишись на сообщество 🌠"
-        font = ImageFont.truetype("data/ua-BRAND-regular.otf", size=40)
+        font = ImageFont.truetype("data/a_PlakatCmplRrBt_ExtraBold.ttf", size=40)
         img = Image.open(f"{event.user_id}.jpg")
         img_draw = ImageDraw.Draw(img)
-        img_draw.text((0, 0), "Склеено чайным ботом", font=font)
+        img_draw.text((0, 0), "Склеено чайным ботом", font=font, fill=(255, 0, 0))
         img.save(f"{event.user_id}.jpg")
 
     devided = False
