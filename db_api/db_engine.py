@@ -50,7 +50,7 @@ class MyDatabase(Gino):
             sex = Column(SmallInteger)
             nickname = Column(VARCHAR(30))
             kombucha = Column(DECIMAL, nullable=False, default=0)
-            kombucha_date = Column(TIMESTAMP, default=datetime.now())
+            kombucha_date = Column(TIMESTAMP, default=datetime.now)
             ext_nick = Column(Boolean, default=False)
             screen_plus = Column(Boolean, default=False)
             balance = Column(Integer, default=0)
