@@ -8,7 +8,7 @@ from utils.scheduler import AsyncIOScheduler, Interval, Cron
 scheduler = AsyncIOScheduler()
 
 
-@scheduler.add_task(Cron(hour=23, minute=59, second=59))
+@scheduler.add_task(Cron(hour=23, minute=59, second=58))
 async def stats_notification():
     day = datetime.now().date()
     stats = await db.select([*db.StatsTotal]).where(db.StatsTotal.date == day).gino.first()
@@ -53,7 +53,7 @@ async def update_stickers():
         await db.Sticker.create(id=pack['product']['id'], name=pack['product']['title'], price=pack.get("price") or 0)
 
 
-@scheduler.add_task(Cron(hour=15, minute=10, second=30))
+@scheduler.add_task(Cron(hour=0, minute=0, second=0))
 async def congratulation_birthday():
     user_ids = await db.select([db.User.user_id, db.User.birthday]).where(db.User.birthday.isnot(None)).gino.all()
     now = date.today()
