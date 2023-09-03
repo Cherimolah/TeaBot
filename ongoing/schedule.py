@@ -53,7 +53,7 @@ async def update_stickers():
         await db.Sticker.create(id=pack['product']['id'], name=pack['product']['title'], price=pack.get("price") or 0)
 
 
-@scheduler.add_task(Cron(hour=0, minute=0, second=0))
+@scheduler.add_task(Cron(hour=0, minute=0, second=2))
 async def congratulation_birthday():
     user_ids = await db.select([db.User.user_id, db.User.birthday]).where(db.User.birthday.isnot(None)).gino.all()
     now = date.today()
@@ -74,7 +74,8 @@ async def congratulation_birthday():
             reply += "Желаю тебе счастья, здоровья, успехов и всего самого наилучшего! Пей побольше чая и поменьше кофе"
             for chat_id in chat_ids:
                 await bot.write_msg(chat_id + 2000000000, reply,
-                                    attachment="photo-201071106_457240771_7de9eaa806e40d06be")
+                                    attachment="photo-201071106_457240771_7de9eaa806e40d06be", disable_mentions=False)
                 await asyncio.sleep(0.2)
             if not chat_ids:
-                await bot.write_msg(user_id, reply, attachment="photo-201071106_457240771_7de9eaa806e40d06be")
+                await bot.write_msg(user_id, reply, attachment="photo-201071106_457240771_7de9eaa806e40d06be",
+                                    disable_mentions=False)

@@ -1,5 +1,6 @@
 import asyncio
 import os
+from io import BytesIO
 from loader import bot
 from vkbottle.bot import Message, MessageEvent
 from vkbottle.dispatch.rules.base import AttachmentTypeRule, PayloadMapRule
@@ -55,7 +56,9 @@ async def set_boards(event: MessageEvent):
 
     if not await bot.api.groups.is_member(GROUP_ID, event.object.user_id):
         reply += ". Чтобы отключить водяной знак подпишись на сообщество 🌠"
-        font = ImageFont.truetype("data/a_PlakatCmplRrBt_ExtraBold.ttf", size=40)
+        with open("data/a_PlakatCmplRrBt_ExtraBold.ttf", mode='rb') as file:
+            font_data = BytesIO(file.read())
+        font = ImageFont.truetype(font_data, size=40)
         img = Image.open(f"{event.user_id}.jpg")
         img_draw = ImageDraw.Draw(img)
         img_draw.text((0, 0), "Склеено чайным ботом", font=font, fill=(255, 0, 0))
