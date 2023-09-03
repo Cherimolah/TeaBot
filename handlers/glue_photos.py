@@ -1,22 +1,20 @@
 import asyncio
 import os
-from io import BytesIO
+
 from loader import bot
 from vkbottle.bot import Message, MessageEvent
 from vkbottle.dispatch.rules.base import AttachmentTypeRule, PayloadMapRule
 from keyboards.private import formats, boards
 from vkbottle import GroupEventType
 from glue.glue_photos import glue
-from config import GROUP_ID, BOT_TOKEN
-from vkbottle import PhotoMessageUploader
-from vkbottle.bot import Bot
+from config import GROUP_ID, FONT_PATH
+from bots.uploaders import bot_photo_message_upl
 from vkbottle import VKAPIError
 from PIL import Image, ImageDraw, ImageFont
 from utils.photos import get_max_photo
 
 
 glue_users = {}
-photo_uploader = PhotoMessageUploader(Bot(BOT_TOKEN).api)
 
 
 @bot.on.private_message(AttachmentTypeRule("photo"))
@@ -56,9 +54,7 @@ async def set_boards(event: MessageEvent):
 
     if not await bot.api.groups.is_member(GROUP_ID, event.object.user_id):
         reply += ". Чтобы отключить водяной знак подпишись на сообщество 🌠"
-        with open("data/a_PlakatCmplRrBt_ExtraBold.ttf", mode='rb') as file:
-            font_data = BytesIO(file.read())
-        font = ImageFont.truetype(font_data, size=40)
+        font = ImageFont.truetype(FONT_PATH, size=40)
         img = Image.open(f"{event.user_id}.jpg")
         img_draw = ImageDraw.Draw(img)
         img_draw.text((0, 0), "Склеено чайным ботом", font=font, fill=(255, 0, 0))
@@ -67,7 +63,7 @@ async def set_boards(event: MessageEvent):
     devided = False
     while True:
         try:
-            photo = await photo_uploader.upload(f"{event.user_id}.jpg")
+            photo = await bot_photo_message_upl.upload(f"{event.user_id}.jpg")
             break
         except VKAPIError[100]:
             devided = True

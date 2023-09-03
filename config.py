@@ -25,3 +25,4 @@ confirmation_code = os.environ.get('CONFIRMATION_CODE')
 DATE_PARSING = os.environ.get('DATE_PARSING')
 DEBUG = False if os.environ.get('DEBUG') == 'False' else True
 webdriver_path = os.environ.get('WEBDRIVER_PATH')
+FONT_PATH = os.environ.get('FONT_PATH')
