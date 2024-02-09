@@ -1,5 +1,6 @@
 from abc import ABC
 from typing import List, Union, Tuple
+import time
 
 from vkbottle.bot import Message
 from vkbottle.dispatch.rules.base import ABCRule
@@ -77,7 +78,7 @@ class AdminCommand(ABCRule, ABC):
                     return False
                 if self.need_time:
                     to_time = parse_period(m)
-                    if to_time == -1:
+                    if to_time == -1 or to_time - time.time() > 3153600000:  # 100 years
                         await bot.reply_msg(m, "🤷‍♂ Неверный период")
                         return False
                     return {"to_user_id": to_user_id, "to_time": to_time}
