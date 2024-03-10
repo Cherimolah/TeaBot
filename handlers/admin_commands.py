@@ -17,20 +17,19 @@ async def ban_command(m: Message, to_user_id: int = None, to_time: int = None):
                              db.Punishment.chat_id == m.chat_id))).gino.first()
     if res is not None:
         from_user_id, from_user_name, from_user_nickname, ban_time = res
-        await bot.reply_msg(
-            m, f"📝 У {await db.get_mention_user(to_user_id, 1)} уже есть бан до "
+        await m.reply(f"📝 У {await db.get_mention_user(to_user_id, 1)} уже есть бан до "
             f"{parse_unix_to_date(ban_time)} от "
             f"[id{from_user_id}|{from_user_name if from_user_nickname is None else from_user_nickname}]"
         )
         return
     to_user_admin = await db.is_admin_user(to_user_id, m.chat_id)
     if to_user_admin:
-        await bot.reply_msg(m, "🙅‍♂ Не могу исключить пользователя настройками вк")
+        await m.reply("🙅‍♂ Не могу исключить пользователя настройками вк")
         return
     await db.add_punishment(Punishments.BAN, to_time, m.chat_id, m.from_id, to_user_id)
     from_user_name = await db.get_mention_user(m.from_id, 4)
     to_user_name = await db.get_mention_user(to_user_id, 0)
-    await bot.reply_msg(m, f"⛔ {to_user_name} обвиняется {from_user_name} в незаконной любви к кофе. Вам запрещено "
+    await m.reply(f"⛔ {to_user_name} обвиняется {from_user_name} в незаконной любви к кофе. Вам запрещено "
                           f"появляться в этой беседе до {parse_unix_to_date(to_time)}")
     try:
         await bot.api.messages.remove_chat_user(m.chat_id, member_id=to_user_id)
@@ -46,13 +45,12 @@ async def unban_command(m: Message, to_user_id: int = None):
                  .where(and_(db.Punishment.to_user_id == to_user_id, db.Punishment.type == 3,
                              db.Punishment.chat_id == m.chat_id))).gino.first()
     if res is None:
-        await bot.reply_msg(m, f"📝 У {await db.get_mention_user(to_user_id, 1)} нет бана")
+        await m.reply(f"📝 У {await db.get_mention_user(to_user_id, 1)} нет бана")
         return
     to_user_id, to_user_name, to_user_nickname, ban_id = res
     await db.Punishment.delete.where(and_(db.Punishment.type == 3, db.Punishment.chat_id == m.chat_id,
                                           db.Punishment.to_user_id == to_user_id)).gino.status()
-    await bot.reply_msg(
-        m, f"✅ {await db.get_mention_user(m.from_id, 0)} снял{'а' if await db.is_woman_user(m.from_id) else ''} бан с "
+    await m.reply(f"✅ {await db.get_mention_user(m.from_id, 0)} снял{'а' if await db.is_woman_user(m.from_id) else ''} бан с "
            f"[id{to_user_id}|{to_user_name if to_user_nickname is None else to_user_nickname}]")
 
 
@@ -64,13 +62,13 @@ async def mute_command(m: Message, to_user_id: int = None, to_time: int = None):
                              db.Punishment.chat_id == m.chat_id))).gino.first()
     if res is not None:
         from_user_id, from_user_name, from_user_nickname, mute_time = res
-        await bot.reply_msg(m,
+        await m.reply(
                            f"📝 У {await db.get_mention_user(to_user_id, 1)} уже есть мут от "
                            f"[id{from_user_id}|{from_user_name if from_user_nickname is None else from_user_nickname}]"
                            f" до {parse_unix_to_date(mute_time)}")
         return
     await db.add_punishment(Punishments.MUTE, to_time, m.chat_id, m.from_id, to_user_id)
-    await bot.reply_msg(m, f"🤐 {await db.get_mention_user(m.from_id, 0)} выдал мут "
+    await m.reply(f"🤐 {await db.get_mention_user(m.from_id, 0)} выдал мут "
                           f"{await db.get_mention_user(to_user_id, 2)} до {parse_unix_to_date(to_time)}")
 
 
@@ -82,13 +80,12 @@ async def clear_mute_command(m: Message, to_user_id: int):
                  .where(and_(db.Punishment.to_user_id == to_user_id, db.Punishment.type == 1,
                              db.Punishment.chat_id == m.chat_id))).gino.first()
     if res is None:
-        await bot.reply_msg(m, f"📝 У {await db.get_mention_user(to_user_id, 1)} нет мута")
+        await m.reply(f"📝 У {await db.get_mention_user(to_user_id, 1)} нет мута")
         return
     to_user_id, to_user_name, to_user_nickname, ban_id = res
     await db.Punishment.delete.where(and_(db.Punishment.type == 1, db.Punishment.chat_id == m.chat_id,
                                           db.Punishment.to_user_id == to_user_id)).gino.status()
-    await bot.reply_msg(
-        m, f"✅ {await db.get_mention_user(m.from_id, 0)} снял{'а' if await db.is_woman_user(to_user_id) else ''} мут с "
+    await m.reply(f"✅ {await db.get_mention_user(m.from_id, 0)} снял{'а' if await db.is_woman_user(to_user_id) else ''} мут с "
            f"[id{to_user_id}|{to_user_name if to_user_nickname is None else to_user_nickname}]")
 
 
@@ -104,24 +101,23 @@ async def un_warn_command(m: Message, to_user_id: int):
                  .where(and_(db.Punishment.to_user_id == to_user_id, db.Punishment.chat_id == m.chat_id))
                  .gino.first())
     if not res:
-        await bot.reply_msg(m, f"📝 У {await db.get_mention_user(to_user_id, 1)} нет предупреждений")
+        await m.reply(f"📝 У {await db.get_mention_user(to_user_id, 1)} нет предупреждений")
         return
     to_user_id, to_user_name, to_user_nickname, ban_id = res
     await db.Punishment.delete.where(and_(db.Punishment.type == 2, db.Punishment.to_user_id == to_user_id,
                                           db.Punishment.chat_id == m.chat_id)).gino.status()
-    await bot.reply_msg(
-        m, f"✅ {await db.get_mention_user(m.from_id, 0)} снял{'а' if await db.is_woman_user(to_user_id) else ''} "
+    await m.reply(f"✅ {await db.get_mention_user(m.from_id, 0)} снял{'а' if await db.is_woman_user(to_user_id) else ''} "
            f"все предупреждения с [id{to_user_id}|{to_user_name if to_user_nickname is None else to_user_nickname}]")
 
 
 @bot.on.chat_message(AdminCommand("кик", 2))
 async def un_warn_command(m: Message, to_user_id: int):
     if await db.is_admin_user(to_user_id, m.chat_id):
-        await bot.reply_msg(m, "🙅‍♂ Не могу исключить пользователя настройками вк")
+        await m.reply("🙅‍♂ Не могу исключить пользователя настройками вк")
         return
     if await db.select([db.UserToChat.in_chat]).where(
             and_(db.UserToChat.chat_id == m.chat_id, db.UserToChat.user_id == to_user_id)).gino.scalar():
-        await bot.reply_msg(m, f"🕵 {await db.get_mention_user(to_user_id, 0)} подозревается "
+        await m.reply(f"🕵 {await db.get_mention_user(to_user_id, 0)} подозревается "
                               f"{await db.get_mention_user(m.from_id, 4)} в любви к кофе. "
                               f"Исключаем до выяснения обстоятельств")
         try:
@@ -129,7 +125,7 @@ async def un_warn_command(m: Message, to_user_id: int):
         except VKAPIError:
             pass
     else:
-        await bot.reply_msg(m, f"🙅‍♂ {await db.get_mention_user(to_user_id, 0)} уже исключён")
+        await m.reply(f"🙅‍♂ {await db.get_mention_user(to_user_id, 0)} уже исключён")
 
 
 @bot.on.chat_message(AdminCommand("повысить", 0))
@@ -138,12 +134,12 @@ async def increase_user_command(m: Message, to_user_id: int):
         and_(db.UserToChat.user_id == to_user_id, db.UserToChat.chat_id == m.chat_id)
     ).gino.scalar()
     if rang >= 5:
-        await bot.reply_msg(m, f"🚫 У {await db.get_mention_user(to_user_id, 1)} уже максимальный ранг")
+        await m.reply(f"🚫 У {await db.get_mention_user(to_user_id, 1)} уже максимальный ранг")
         return
     await db.UserToChat.update.values(rang=db.UserToChat.rang + 1).where(
         and_(db.UserToChat.user_id == to_user_id, db.UserToChat.chat_id == m.chat_id)
     ).gino.status()
-    await bot.reply_msg(m, f"✅ {await db.get_mention_user(m.from_id, 0)} повысил "
+    await m.reply(f"✅ {await db.get_mention_user(m.from_id, 0)} повысил "
                           f"{await db.get_mention_user(to_user_id, 3)}. Теперь у "
                           f"{await db.get_mention_user(to_user_id, 1)} ранг {rangnames[rang + 1]}")
 
@@ -154,12 +150,12 @@ async def decrease_user_command(m: Message, to_user_id: int):
         and_(db.UserToChat.user_id == to_user_id, db.UserToChat.chat_id == m.chat_id)
     ).gino.scalar()
     if rang <= 0:
-        await bot.reply_msg(m, f"🚫 У {await db.get_mention_user(to_user_id, 1)} уже минимальный ранг")
+        await m.reply(f"🚫 У {await db.get_mention_user(to_user_id, 1)} уже минимальный ранг")
         return
     await db.UserToChat.update.values(rang=db.UserToChat.rang - 1).where(
         and_(db.UserToChat.user_id == to_user_id, db.UserToChat.chat_id == m.chat_id)
     ).gino.status()
-    await bot.reply_msg(m, f"✅ {await db.get_mention_user(m.from_id, 0)} понизил "
+    await m.reply(f"✅ {await db.get_mention_user(m.from_id, 0)} понизил "
                           f"{await db.get_mention_user(to_user_id, 3)}. Теперь у "
                           f"{await db.get_mention_user(to_user_id, 1)} ранг {rangnames[rang - 1]}")
 
@@ -169,14 +165,14 @@ async def set_rang(m: Message, to_user_id: int):
     try:
         rank = int(m.text.split(" ")[-1])
     except ValueError:
-        await bot.reply_msg(m, "🚫 В конце укажите номер ранга")
+        await m.reply("🚫 В конце укажите номер ранга")
         return
     if not 0 <= rank <= 5:
-        await bot.reply_msg(m, "🚫 Укажите ранг от 0 до 5 включительно")
+        await m.reply("🚫 Укажите ранг от 0 до 5 включительно")
         return
     await db.UserToChat.update.values(rang=rank).where(
         and_(db.UserToChat.user_id == to_user_id, db.UserToChat.chat_id == m.chat_id)
     ).gino.status()
-    await bot.reply_msg(m, f"✅ {await db.get_mention_user(m.from_id, 0)} установил "
+    await m.reply(f"✅ {await db.get_mention_user(m.from_id, 0)} установил "
                           f"{await db.get_mention_user(to_user_id, 2)} ранг {rangnames[rank]}")
 

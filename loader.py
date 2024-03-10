@@ -1,14 +1,21 @@
-from config import BOT_TOKEN, USER_TOKEN, QIWI_TOKEN, confirmation_code, secret_key, GROUP_ID, webdriver_path
 import sys
 import loguru
-from bots.bot_extended import MyBot
+
 from vkbottle.user import User
+from vkbottle.bot import Bot
+from vkbottle.framework.labeler.bot import BotLabeler
 from pyqiwip2p import AioQiwiP2P
 from db_api.db_engine import db
 from pyppeteer import launch
 from fastapi import FastAPI, BackgroundTasks, Request, Response
 
-bot = MyBot(BOT_TOKEN)
+from bots.bot_extended import APIExtended, RawBotEventViewExtended, BotMessageViewExtended
+from config import BOT_TOKEN, USER_TOKEN, QIWI_TOKEN, confirmation_code, secret_key, GROUP_ID, webdriver_path
+
+
+bot = Bot(api=APIExtended(BOT_TOKEN),
+          labeler=BotLabeler(raw_event_view=RawBotEventViewExtended(),
+                             message_view=BotMessageViewExtended()))
 evg = User(USER_TOKEN)
 
 qiwi = AioQiwiP2P(QIWI_TOKEN)
@@ -52,5 +59,6 @@ async def on_startup():
             '--single-process',
             '--disable-dev-shm-usage',
             '--disable-gpu',
-            '--no-zygote'
+            '--no-zygote',
+            '--disable-setuid-sandbox'
         ])

@@ -52,7 +52,7 @@ async def user_profile(m: Message, to_user_id: int = None):
                  f"[{'club' if invited_by < 0 else 'id'}{abs(invited_by)}|{invited_by_nickname or invited_by_name}]\n" \
                  f"👴 В беседе с {joined_at.strftime('%d.%m.%Y %H:%M:%S')}\n"
     reply += f"✏ Описание: {description if description is not None else ''}\n"
-    await bot.reply_msg(m, reply)
+    await m.reply(reply)
 
 
 @bot.on.message(CommandWithAnyArgs("описание "))
@@ -60,7 +60,7 @@ async def user_profile(m: Message, to_user_id: int = None):
 async def set_description(m: Message):
     description = m.text[9:]
     await db.User.update.values(description=description).where(db.User.user_id == m.from_id).gino.status()
-    await bot.reply_msg(m, f"Теперь ваше описание: «{description}»")
+    await m.reply(f"Теперь ваше описание: «{description}»")
 
 
 @bot.on.message(Command("купить ник+"))
@@ -69,10 +69,10 @@ async def buy_vip(m: Message):
     if balance >= 15:
         await (db.User.update.values(ext_nick=True, balance=db.User.balance - 15)
                .where(db.User.user_id == m.from_id)).gino.status()
-        await bot.reply_msg(m, "🎉 Супер! Теперь ты можешь ставить в ник любые символы, а также твой ник расширен до "
+        await m.reply("🎉 Супер! Теперь ты можешь ставить в ник любые символы, а также твой ник расширен до "
                               "30 символов")
         return
-    await bot.reply_msg(m, f"🪫 Для покупки расширенного ника нужно 15 кубиков сахара 🧊. У вас доступно {balance} 🧊\n"
+    await m.reply(f"🪫 Для покупки расширенного ника нужно 15 кубиков сахара 🧊. У вас доступно {balance} 🧊\n"
                           f"Чтобы пополнить баланс введите «пополнить баланс»")
 
 
@@ -82,9 +82,9 @@ async def buy_vip(m: Message):
     if balance >= 40:
         await (db.User.update.values(ext_nick=True, balance=db.User.balance - 40)
                .where(db.User.user_id == m.from_id)).gino.status()
-        await bot.reply_msg(m, "🎉 Супер! Теперь ты можешь использовать команду «скрин+»")
+        await m.reply("🎉 Супер! Теперь ты можешь использовать команду «скрин+»")
         return
-    await bot.reply_msg(m, f"🪫 Для покупки расширенной команды скрин нужно 40 кубиков сахара 🧊. У вас доступно {balance} 🧊\n"
+    await m.reply(f"🪫 Для покупки расширенной команды скрин нужно 40 кубиков сахара 🧊. У вас доступно {balance} 🧊\n"
                           f"Чтобы пополнить баланс введите «пополнить баланс»")
 
 
@@ -95,9 +95,9 @@ async def buy_defend(m: Message):
         await db.User.update.values(boost_kombucha=True, balance=db.User.balance - 15).where(
             db.User.user_id == m.from_id
         ).gino.status()
-        await bot.reply_msg(m, "🎉 Супер! Теперь у тебя не будет уменьшаться гриб при рандоме")
+        await m.reply("🎉 Супер! Теперь у тебя не будет уменьшаться гриб при рандоме")
         return
-    await bot.reply_msg(m, f"🪫 Для покупки защиты от уменьшения нужно 15 кубиков сахара 🧊. У тебя доступно {balance} 🧊\n"
+    await m.reply(f"🪫 Для покупки защиты от уменьшения нужно 15 кубиков сахара 🧊. У тебя доступно {balance} 🧊\n"
                           "Чтобы пополнить баланс введите «пополнить баланс {сумма}»")
 
 
@@ -110,7 +110,7 @@ async def buy_sugar(m: Message, amount: int = None):
                                    KeyboardButtonColor.SECONDARY)
     kb.row()
     kb.add(Callback("Проверить оплату", {"bill_check": bill.bill_id}), KeyboardButtonColor.SECONDARY)
-    await bot.reply_msg(m, "Счёт для оплаты создан, оплатите в течении 15 минут", keyboard=kb)
+    await m.reply("Счёт для оплаты создан, оплатите в течении 15 минут", keyboard=kb)
 
 
 @bot.on.raw_event(GroupEventType.MESSAGE_EVENT, MessageEvent, blocking=False)
@@ -125,4 +125,4 @@ async def confirm_buy_sugar(m: MessageEvent):
         return
     await db.User.update.values(balance=db.User.balance+int(float(bill.amount))).where(
         db.User.user_id == int(bill.comment)).gino.status()
-    await bot.change_msg(m, "🎉 Баланс успешно пополнен!")
+    await m.edit_message( "🎉 Баланс успешно пополнен!")

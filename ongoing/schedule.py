@@ -6,6 +6,9 @@ import asyncio
 from utils.scheduler import AsyncIOScheduler, Interval, Cron
 
 scheduler = AsyncIOScheduler()
+today = datetime.now()
+next_minute = datetime(today.year, today.month, today.day, today.hour, 0, 0) + timedelta(minutes=1)
+next_hour = datetime(today.year, today.month, today.day, today.hour, 0, 0) + timedelta(hours=1)
 
 
 @scheduler.add_task(Cron(hour=23, minute=59, second=58))
@@ -13,9 +16,9 @@ async def stats_notification():
     day = datetime.now().date()
     stats = await db.select([*db.StatsTotal]).where(db.StatsTotal.date == day).gino.first()
     if not stats:
-        await bot.write_msg(ADMIN_ID, f"За {day.strftime('%d.%m.%Y')} статистики нет")
+        await bot.api.messages.send(ADMIN_ID, f"За {day.strftime('%d.%m.%Y')} статистики нет")
     else:
-        await bot.write_msg(ADMIN_ID, f"Статистика за {day.strftime('%d.%m.%Y')}:\n\n"
+        await bot.api.messages.send(ADMIN_ID, f"Статистика за {day.strftime('%d.%m.%Y')}:\n\n"
                                      f"Принято сообщений: {stats[1]}\n"
                                      f"Отправлено сообщений: {stats[2]}\n"
                                      f"Отредактировано сообщений: {stats[3]}\n"
@@ -23,7 +26,7 @@ async def stats_notification():
                                      f"Общая активность: {stats[1] + stats[2] + stats[3] + stats[4]}")
 
 
-@scheduler.add_task(Interval(hours=1))
+@scheduler.add_task(Interval(hours=1), next_run_time=next_hour)
 async def kombucha_reduce():
     await db.User.update.values(kombucha=db.User.kombucha - 0.05).where(db.User.kombucha > 100).gino.status()
 
@@ -34,9 +37,6 @@ async def set_online():
         await bot.api.groups.enable_online(GROUP_ID)
     except:
         pass
-
-today = datetime.now()
-next_minute = datetime(today.year, today.month, today.day, today.hour, 0, 0) + timedelta(minutes=1)
 
 
 @scheduler.add_task(Interval(hours=12), next_run_time=next_minute)
@@ -73,9 +73,9 @@ async def congratulation_birthday():
                     reply += "взрослый крутой асинхронный кун! "
             reply += "Желаю тебе счастья, здоровья, успехов и всего самого наилучшего! Пей побольше чая и поменьше кофе"
             for chat_id in chat_ids:
-                await bot.write_msg(chat_id + 2000000000, reply,
+                await bot.api.messages.send(chat_id + 2000000000, reply,
                                     attachment="photo-201071106_457240771_7de9eaa806e40d06be", disable_mentions=False)
                 await asyncio.sleep(0.2)
             if not chat_ids:
-                await bot.write_msg(user_id, reply, attachment="photo-201071106_457240771_7de9eaa806e40d06be",
+                await bot.api.messages.send(user_id, reply, attachment="photo-201071106_457240771_7de9eaa806e40d06be",
                                     disable_mentions=False)

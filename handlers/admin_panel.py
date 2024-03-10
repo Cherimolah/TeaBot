@@ -47,7 +47,7 @@ async def get_attachment_string(m: Message):
                 response = await session.get(link_photo)
                 photo = await response.read()
             string_at += await photo_m.upload(photo)
-            await bot.reply_msg(m, string_at)
+            await m.reply(string_at)
 
 
 @bot.on.private_message(AdminPanelCommand("рп"))
@@ -66,5 +66,5 @@ async def update_rp_commands(m: Message):
         array = []
     array += strings
     await db.RPCommand.update.values(photos=array).where(db.RPCommand.command == command).gino.status()
-    await bot.reply_msg(m, "Добавил")
+    await m.reply("Добавил")
 

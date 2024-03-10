@@ -6,8 +6,10 @@ from aiohttp import ClientSession
 from vkbottle_types.responses.users import UsersUserFull
 
 
+name_cases = ("nom", "gen", "dat", "acc", "ins", "abl")
+
+
 async def get_cases_users(user_ids: List[int]) -> List[UsersUserFull]:
-    name_cases = ("nom", "gen", "dat", "acc", "ins", "abl")
     fields = [f"first_name_{x},last_name_{x}" for x in name_cases]
     fields.append("sex,screen_name,bdate")
     return await bot.api.users.get(user_ids=user_ids, fields=fields)

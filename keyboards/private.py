@@ -2,7 +2,6 @@ from vkbottle import Keyboard, KeyboardButtonColor, Text, Callback
 
 
 main_kb = Keyboard()
-main_kb.add(Text("🍀 Чайная игра", {"button": "tea_game"}), KeyboardButtonColor.PRIMARY).row()
 main_kb.add(Text("🛠 Склеить мем", {"button": "glue"}), KeyboardButtonColor.POSITIVE)
 main_kb.add(Text("🔮 Узнать предсказание", {"button": "get_prediction"}), KeyboardButtonColor.NEGATIVE)
 main_kb.row()

@@ -28,7 +28,7 @@ async def update_users() -> NoReturn:
                 "user_id": bindparam('user_id')
             })
             await db.all(stmt, udata)
-        except: # No need to catch Exceptions in this case
+        except:  # No need to catch Exceptions in this case
             pass
 
 
@@ -78,7 +78,7 @@ async def update_users_in_chats() -> NoReturn:
                             admin=admin, joined_at=joined_at, invited_by=invited_by).where(
                             and_(db.UserToChat.user_id == user_id, db.UserToChat.chat_id == chat_id)
                         ).gino.scalar()
-        except: # No need to catch Exceptions in this case
+        except:  # No need to catch Exceptions in this case
             pass
 
 
@@ -88,5 +88,3 @@ async def load_punisments() -> NoReturn:
         not_(db.Punishment.closing_at.is_(None))).gino.all()
     for punishment in punishments:
         asyncio.get_event_loop().create_task(waiting_punishment(punishment.id, punishment.closing_at))
-
-

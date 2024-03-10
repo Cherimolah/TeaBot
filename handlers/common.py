@@ -29,19 +29,19 @@ screen_users = []
 @bot.on.raw_event(GroupEventType.MESSAGE_EVENT, MessageEvent, PayloadRule({"command": "start"}))
 @bot.on.private_message(Command(["меню", "главное меню", "начать", "старт", "start"]))
 async def start(m: Message):
-    await bot.reply_msg(m, "✋ Приветствую тебя! Здесь ты можешь склеить мем, получить эстетику или узнать предсказание",
+    await m.reply("✋ Приветствую тебя! Здесь ты можешь склеить мем, получить эстетику или узнать предсказание",
                        keyboard=main_kb)
 
 
 @bot.on.chat_message(Command(["чай помоги", "команды", "помощь", "список команд", "help"]))
 async def help_command(m: Message):
-    await bot.reply_msg(m, "Список команд: vk.com/@your_tea_bot-help",
+    await m.reply("Список команд: vk.com/@your_tea_bot-help",
                        attachment="article-201071106_56737_9267e7523067b92cd6")
 
 
 @bot.on.message(Command(["бот", "bot"]))
 async def echo(m: Message):
-    await bot.reply_msg(m, "На месте")
+    await m.reply("На месте")
 
 
 @bot.on.message(Command("чай"))
@@ -54,16 +54,16 @@ async def echo_tea(m: Message):
 @bot.on.private_message(PayloadRule({"button": "help"}))
 @bot.on.message(Command(["помоги", "команды", "помощь", "список команд", "help", "commands"]))
 async def send_help(m: Message):
-    await bot.reply_msg(m, "Список команд: vk.com/@your_tea_bot-help",
+    await m.reply("Список команд: vk.com/@your_tea_bot-help",
                        attachment="article-201071106_56737_9267e7523067b92cd6", keyboard=main_kb)
 
 
 @bot.on.message(Command(["заварить чай", "brew tea"]))
 async def brew_tea(m: Message):
-    await bot.reply_msg(m, "⏰ Через 3 минуты твой чай заварится")
+    await m.reply("⏰ Через 3 минуты твой чай заварится")
     await asyncio.sleep(180)
     user_name = await db.get_mention_user(m.from_id, 0)
-    await bot.write_msg(m.peer_id, f"🍵 {user_name}, ваш чай заварился", disable_mentions=False)
+    await bot.api.messages.send(m.peer_id, f"🍵 {user_name}, ваш чай заварился", disable_mentions=False)
 
 
 @bot.on.private_message(PayloadRule({"button": 4}))
@@ -72,7 +72,7 @@ async def brew_tea(m: Message):
 @bot.on.message(Command(["чай эстетика", "получить эстетику", "эстетика", "чайная эстетика", "aesthetic"]))
 async def aesthetic(m: Message):
     photo = await db.Aesthetic.select('photo').order_by(func.random()).limit(1).gino.scalar()
-    await bot.reply_msg(m, "Вот твоя эстетика:", attachment=photo)
+    await m.reply("Вот твоя эстетика:", attachment=photo)
 
 
 @bot.on.private_message(PayloadRule({"button": "get_prediction"}))
@@ -81,7 +81,7 @@ async def aesthetic(m: Message):
 @bot.on.message(Command(["предсказание", "получить предсказание", "prediction", "гадание"]))
 async def send_prediction(m: Message):
     prediction = await db.Prediction.query.order_by(func.random()).limit(1).gino.first()
-    await bot.reply_msg(m, f"🔮 Вам выпала фигура: {prediction.figure_name}\n"
+    await m.reply(f"🔮 Вам выпала фигура: {prediction.figure_name}\n"
                           f"📄 Значение: {prediction.mean}", attachment=prediction.picture)
 
 
@@ -89,19 +89,19 @@ async def send_prediction(m: Message):
 @bot.on.private_message(PayloadRule({"button": "2"}))
 @bot.on.private_message(PayloadRule({"button": 2}))
 async def need_glue(m: Message):
-    await bot.reply_msg(m, "Кидай фотографии")
+    await m.reply("Кидай фотографии")
 
 
 @bot.on.chat_message(Command(["убери клаву", "-клава", "удали клаву", "удали клавиатуру", "убери клавиатуру"]))
 async def delete_keyboard(m: Message):
-    await bot.reply_msg(m, "🗑 Клавиатура удалена!", keyboard=Keyboard())
+    await m.reply("🗑 Клавиатура удалена!", keyboard=Keyboard())
 
 
 @bot.on.message(Command(["гриб рандом", "рандом", "random"]))
 async def kombucha_rand(m: Message):
     t1: datetime = await db.User.select('kombucha_date').where(db.User.user_id == m.from_id).gino.scalar()
     if (datetime.now() - t1) < timedelta(hours=3):
-        await bot.reply_msg(m, f"⏳ Команда доступна каждые 3 часа. Следующий раз можно использовать через "
+        await m.reply(f"⏳ Команда доступна каждые 3 часа. Следующий раз можно использовать через "
                               f"{parse_cooldown(int(time.mktime((t1 + timedelta(hours=3)).timetuple()) - time.time()))}")
         return
     if await db.User.select('boost_kombucha').where(db.User.user_id == m.from_id).gino.scalar():
@@ -120,7 +120,7 @@ async def kombucha_rand(m: Message):
             f"{difference} см\nЕго длина изменилась с {kombucha_old} см на {kombucha} см"
     if percent < 0:
         reply += "\nТы можешь купить защиту от уменьшения гриба при рандоме. Команда «купить защиту»"
-    await bot.reply_msg(m, reply)
+    await m.reply(reply)
     asyncio.get_event_loop().create_task(remember_kombucha(m.from_id, 10800))
 
 
@@ -128,13 +128,13 @@ async def kombucha_rand(m: Message):
 async def get_my_kombucha(m: Message):
     kombucha = await db.User.select('kombucha').where(db.User.user_id == m.from_id).gino.scalar()
     kombucha = Decimal(kombucha).quantize(Decimal("1.000"))
-    await bot.reply_msg(m, f"🍄 Рост твоего гриба составляет {kombucha} см")
+    await m.reply(f"🍄 Рост твоего гриба составляет {kombucha} см")
 
 
 @bot.on.message(Command(["все рп команды", "рп команды"]))
 async def rp_all_commands(m: Message):
     commands = [x[0] for x in await db.RPCommand.select('command').where(db.RPCommand.owner.is_(None)).gino.all()]
-    await bot.reply_msg(m, f"Мои рп-команды в беседах:\n\n{', '.join(commands)}")
+    await m.reply(f"Мои рп-команды в беседах:\n\n{', '.join(commands)}")
 
 
 @bot.on.message(Command(["все грибы", "список грибов", "рейтинг", "топ грибов", "rating", "грибы топ", "грибы"]))
@@ -154,7 +154,7 @@ async def get_kombucha_list(m: Message):
     if count_pages > 1:
         kb = Keyboard(inline=True, one_time=False).add(Callback("➡", {"kombucha_page_total": 2}),
                                                        KeyboardButtonColor.SECONDARY)
-    await bot.reply_msg(m, reply, keyboard=kb)
+    await m.reply(reply, keyboard=kb)
 
 
 @bot.on.chat_message(Command(["все грибы беседы", "список грибов беседы", "рейтинг беседы", "топ грибов беседы",
@@ -178,7 +178,7 @@ async def kombucha_list_conf(m: Message):
     if count_pages > 1:
         kb = Keyboard(inline=True, one_time=False).add(Callback("➡", {"kombucha_page": 2}),
                                                        KeyboardButtonColor.SECONDARY)
-    await bot.reply_msg(m, reply, keyboard=kb)
+    await m.reply(reply, keyboard=kb)
 
 
 @bot.on.raw_event(GroupEventType.MESSAGE_EVENT, MessageEvent, PayloadMapRule({"kombucha_page": int}))
@@ -202,7 +202,7 @@ async def get_page_kombucha(m: MessageEvent):
         kb.add(Callback("⬅", {"kombucha_page": curr_page - 1}), KeyboardButtonColor.SECONDARY)
     if curr_page < count_pages:
         kb.add(Callback("➡", {"kombucha_page": curr_page + 1}), KeyboardButtonColor.SECONDARY)
-    await bot.change_msg(m, reply, keyboard=kb)
+    await m.edit_message( reply, keyboard=kb)
 
 
 @bot.on.raw_event(GroupEventType.MESSAGE_EVENT, MessageEvent, PayloadMapRule({"kombucha_page_total": int}))
@@ -221,40 +221,33 @@ async def get_page_kombucha(m: MessageEvent):
         kb.add(Callback("⬅", {"kombucha_page_total": curr_page - 1}), KeyboardButtonColor.SECONDARY)
     if curr_page < count_pages:
         kb.add(Callback("➡", {"kombucha_page_total": curr_page + 1}), KeyboardButtonColor.SECONDARY)
-    await bot.change_msg(m, reply, keyboard=kb)
-
-
-@bot.on.message(PayloadRule({"button": "tea_game"}))
-async def start_game(m: Message):
-    await bot.reply_msg(
-        m, "✨ Чайная игра сейчас в разработке, но скоро она появится. А пока вы можете написать идеи свои для админа"
-    )
+    await m.edit_message(reply, keyboard=kb)
 
 
 @bot.on.message(Command('скрин+'))
 @bot.on.message(Command('скрин+', null_args=False, returning_args=True, args_names=('url',)))
 async def screen_base(m: Message, url: str = None):
     if m.from_id in screen_users:
-        await bot.reply_msg(m, "⏳ У тебя уже грузится скрин. По одному, пожалуйста")
+        await m.reply("⏳ У тебя уже грузится скрин. По одному, пожалуйста")
         return
     screen_plus = await db.select([db.User.screen_plus]).where(db.User.user_id == m.from_id).gino.scalar()
     if not screen_plus:
-        await bot.reply_msg(m, "🚫 Команда доступна для тех, у кого есть опция скрин+\n\n"
+        await m.reply("🚫 Команда доступна для тех, у кого есть опция скрин+\n\n"
                                "Напиши «купить скрин+»")
         return
     if url is None:
-        await bot.reply_msg(m, "🤷‍♂️ Нужно добавить ссылку. Пример: «скринб https://vk.com»")
+        await m.reply("🤷‍♂️ Нужно добавить ссылку. Пример: «скринб https://vk.com»")
         return
     if not url.startswith("https://") and not url.startswith("http://"):
         url = f"https://{url}"
-    await bot.reply_msg(m, "🎥 Чайник достаёт свой фотоаппарат")
+    await m.reply("🎥 Чайник достаёт свой фотоаппарат")
     async with ClientSession(timeout=ClientTimeout(5)) as session:
         try:
             response = await session.get(url)
         except ClientConnectionError:
-            await bot.reply_msg(m, "❌ Адрес недоступен!")
+            await m.reply("❌ Адрес недоступен!")
         if not str(response.status).startswith('2'):
-            await bot.reply_msg(m, "❌ Сервер вернул неуспешный ответ!")
+            await m.reply("❌ Сервер вернул неуспешный ответ!")
             return
     from loader import browser
     page = await browser.newPage()
@@ -267,21 +260,21 @@ async def screen_base(m: Message, url: str = None):
     await page.close()
     attachment = await bot_photo_message_upl.upload('screenshot.png')
     os.remove("screenshot.png")
-    await bot.reply_msg(m, "Держи скрин сайта", attachment=attachment)
+    await m.reply("Держи скрин сайта", attachment=attachment)
 
 
 @bot.on.message(Command('скрин'))
 @bot.on.message(Command('скрин', null_args=False, returning_args=True, args_names=('url',)))
 async def screen_url(m: Message, url: str = None):
     if url is None:
-        await bot.reply_msg(m, "🤷‍♂️ Нужно добавить ссылку. Пример: «скрин https://vk.com»")
+        await m.reply("🤷‍♂️ Нужно добавить ссылку. Пример: «скрин https://vk.com»")
         return
-    await bot.reply_msg(m, "🎥 Чайник достаёт свой фотоаппарат")
+    await m.reply("🎥 Чайник достаёт свой фотоаппарат")
     async with ClientSession() as session:
         response = await session.get(f"https://mini.s-shot.ru/1920x1080/1024/png/?{url}")
         photo = await response.read()
         attachment = await bot_photo_message_upl.upload(photo)
-        await bot.reply_msg(m, "🔍 Держи скрин сайта\n\nНекоторые сайты не отображаются с прокси сервера. "
+        await m.reply("🔍 Держи скрин сайта\n\nНекоторые сайты не отображаются с прокси сервера. "
                                "Для отправки запросов с основного российского сервера используйте команду "
                                "«скринб https://example.com»",
                             attachment=attachment)
@@ -289,14 +282,14 @@ async def screen_url(m: Message, url: str = None):
 
 @bot.on.message(CommandWithAnyArgs("инфа "))
 async def get_chance(m: Message):
-    await bot.reply_msg(m, f"🔮 Вероятность этого события составляет {randint(0, 100)}%")
+    await m.reply(f"🔮 Вероятность этого события составляет {randint(0, 100)}%")
 
 
 @bot.on.message(CommandWithAnyArgs("выбери "))
 async def get_choice(m: Message):
     options = m.text[7:].split(" или ")
     if len(options) <= 1:
-        await bot.reply_msg(m,
+        await m.reply(
                            "🚫 Выбор должен быть минимум между двумя вариантами. Пример: «выбери красный или бараны»")
         return
-    await bot.reply_msg(m, f"⚖ Я выбираю «{choice(options)}»")
+    await m.reply(f"⚖ Я выбираю «{choice(options)}»")

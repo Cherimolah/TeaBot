@@ -8,14 +8,14 @@ from vkbottle_types.objects import CallbackLikeAddRemoveObjectType as LikeType
 
 @bot.on.raw_event(GroupEventType.GROUP_LEAVE, GroupLeave)
 async def left_user(event: GroupLeave):
-    await bot.write_msg(ADMIN_ID, f"Отписался от паблика: https://vk.com/id{event.object.user_id}")
+    await bot.api.messages.send(ADMIN_ID, f"Отписался от паблика: https://vk.com/id{event.object.user_id}")
     if (await bot.api.messages.is_messages_from_group_allowed(group_id=GROUP_ID, user_id=event.object.user_id)).is_allowed:
-        await bot.write_msg(event.object.user_id, "👉🥺👈 Вернись, пожалуйста, я тебя прошу")
+        await bot.api.messages.send(event.object.user_id, "👉🥺👈 Вернись, пожалуйста, я тебя прошу")
 
 
 @bot.on.raw_event(GroupEventType.GROUP_JOIN, GroupJoin)
 async def join_user(event: GroupJoin):
-    await bot.write_msg(ADMIN_ID, f"Вступил в группу: https://vk.com/id{event.object.user_id}")
+    await bot.api.messages.send(ADMIN_ID, f"Вступил в группу: https://vk.com/id{event.object.user_id}")
 
 
 @bot.on.raw_event(GroupEventType.WALL_POST_NEW, WallPostNew)
@@ -53,7 +53,7 @@ async def like_added(event: LikeAdd):
         post_type = "комментарий под видео"
     else:
         post_type = "неизвестным типом"
-    await bot.write_msg(ADMIN_ID, f"❤ [id{user[0].id}|{user[0].first_name} {user[0].last_name}] "
+    await bot.api.messages.send(ADMIN_ID, f"❤ [id{user[0].id}|{user[0].first_name} {user[0].last_name}] "
                                  f"поставил{'а' if user[0].sex == 1 else ''} лайк на {post_type} "
                                  f"https://vk.com/wall-{GROUP_ID}_{event.object.object_id}")
 
@@ -67,7 +67,7 @@ async def comment_added(event: WallReplyNew):
         group = await bot.api.groups.get_by_id(abs(event.object.from_id))
         name = f'[id{group[0].id}|{group[0].name}]'
         user = None
-    await bot.write_msg(ADMIN_ID, f"📝 {name} написал{'а' if user and user[0].sex == 1 else ''} под постом "
+    await bot.api.messages.send(ADMIN_ID, f"📝 {name} написал{'а' if user and user[0].sex == 1 else ''} под постом "
                                  f"https://vk.com/wall-{GROUP_ID}_{event.object.post_id} "
                                  f"комментарий: «{event.object.text}»")
 
@@ -81,6 +81,6 @@ async def board_post_new(event: BoardPostNew):
         group = await bot.api.groups.get_by_id(abs(event.object.from_id))
         name = f'[id{group[0].id}|{group[0].name}]'
         user = None
-    await bot.write_msg(ADMIN_ID, f"📝  {name} написал{'а' if user and user[0].sex == 1 else ''} в обсуждении "
+    await bot.api.messages.send(ADMIN_ID, f"📝  {name} написал{'а' if user and user[0].sex == 1 else ''} в обсуждении "
                                  f"https://vk.com/topic{event.object.topic_owner_id}_{event.object.topic_id} "
                                  f"комментарий: «{event.object.text}»")

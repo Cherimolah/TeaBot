@@ -63,28 +63,28 @@ async def role_play_command(m: Message, command: str = None, owner: int = None):
         if match is not None:
             replic = replic[match.span()[1]:].lstrip()
     photo = random.choice(photos) if photos else None
-    await bot.reply_msg(m, f"{emoji} {user_name} {action} {specify if specify is not None else ''} "
+    await m.reply(f"{emoji} {user_name} {action} {specify if specify is not None else ''} "
                           f"{to_user_name}\n"
                           f"{f'💬 С репликой: «{replic}»' if replic != '' else ''}", attachment=photo)
 
 
 @bot.on.chat_message(text=["обнять всех"])
 async def hug_all(m: Message):
-    await bot.reply_msg(m, f"🤗 {await db.get_mention_user(m.from_id, 0)} обнял сразу всех")
+    await m.reply(f"🤗 {await db.get_mention_user(m.from_id, 0)} обнял сразу всех")
 
 
 @bot.on.private_message(text="+рп")
 async def add_rp_command(m: Message):
     balance = await db.select([db.User.balance]).where(db.User.user_id == m.from_id).gino.scalar()
     if balance < 5:
-        await bot.reply_msg(m, "Создание собственной рп команды стоит 5 🧊. Напиши «пополнить баланс {сумма}»\n"
+        await m.reply("Создание собственной рп команды стоит 5 🧊. Напиши «пополнить баланс {сумма}»\n"
                               "✅ Ты сможешь использовать их в любых чатах")
         return
     command = RPCommand()
     context[m.peer_id] = command
     await bot.state_dispenser.set(m.peer_id, AddingRPCommand.COMMAND)
     await db.User.update.values(balance=db.User.balance-5).where(db.User.user_id == m.from_id).gino.status()
-    await bot.reply_msg(m, "Напиши текст по которой будет вызываться команда. Например: сжечь")
+    await m.reply("Напиши текст по которой будет вызываться команда. Например: сжечь")
 
 
 @bot.on.private_message(state=AddingRPCommand.COMMAND)
@@ -92,32 +92,32 @@ async def set_command(m: Message):
     command_id = await db.select([db.RPCommand.id]).where(
         and_(db.RPCommand.command == m.text.lower(), db.RPCommand.owner.is_(None))).gino.scalar()
     if command_id:
-        await bot.reply_msg(m, "Это общедоступная команда, придумай себе другую")
+        await m.reply("Это общедоступная команда, придумай себе другую")
         return
     command_id = await db.select([db.RPCommand.id]).where(
         and_(db.RPCommand.command == m.text.lower(), db.RPCommand.owner == m.from_id)).gino.scalar()
     if command_id:
-        await bot.reply_msg(m, "У тебя уже есть такая команда")
+        await m.reply("У тебя уже есть такая команда")
         return
     if len(m.text) > 20:
-        await bot.reply_msg(m, "Зачем тебе такая большая команда? Сократи до 20 символов")
+        await m.reply("Зачем тебе такая большая команда? Сократи до 20 символов")
     context[m.peer_id].command = m.text.lower()
     await bot.state_dispenser.set(m.peer_id, AddingRPCommand.EMOJI)
-    await bot.reply_msg(m, "Пришли одно или два эмодзи, которые будут использоваться. Например: 🔥")
+    await m.reply("Пришли одно или два эмодзи, которые будут использоваться. Например: 🔥")
 
 
 @bot.on.private_message(state=AddingRPCommand.EMOJI)
 async def set_emoji(m: Message):
     if len(m.text) > 2:
-        await bot.reply_msg(m, "Давай ограничимся двумя эмодзи")
+        await m.reply("Давай ограничимся двумя эмодзи")
         return
     for em in m.text:
         if em not in EMOJI_DATA:
-            await bot.reply_msg(m, "У тебя что-то не из эмодзи")
+            await m.reply("У тебя что-то не из эмодзи")
             return
     context[m.peer_id].emoji = m.text
     await bot.state_dispenser.set(m.peer_id, AddingRPCommand.ACTION)
-    await bot.reply_msg(m, "Теперь напиши действие рп-команды. "
+    await m.reply("Теперь напиши действие рп-команды. "
                           "Можно использовать несколько слов. Например: сжёг на костре")
 
 
@@ -125,7 +125,7 @@ async def set_emoji(m: Message):
 async def set_action(m: Message):
     context[m.peer_id].action = m.text
     await bot.state_dispenser.set(m.peer_id, AddingRPCommand.NAME_CASE)
-    await bot.reply_msg(m, "Теперь выбери падеж, который будет использоваться\n\n"
+    await m.reply("Теперь выбери падеж, который будет использоваться\n\n"
                           "1. Именительный (Евгений)\n"
                           "2. Родительный (Евгения)\n"
                           "3. Дательный (Евгению)\n"
@@ -139,14 +139,14 @@ async def set_name_case(m: Message):
     try:
         name_case = int(m.text)
     except TypeError:
-        await bot.reply_msg(m, "Отправь одно число от 1 до 6")
+        await m.reply("Отправь одно число от 1 до 6")
         return
     if name_case not in list(range(1, 6)):
-        await bot.reply_msg(m, "Нужно числот от 1 до 6")
+        await m.reply("Нужно числот от 1 до 6")
         return
     context[m.peer_id].name_case = name_case
     await bot.state_dispenser.set(m.peer_id, AddingRPCommand.PHOTOS)
-    await bot.reply_msg(m, "Отправляй фотографии, которые будут использоваться для твоей рп-команды")
+    await m.reply("Отправляй фотографии, которые будут использоваться для твоей рп-команды")
 
 
 @bot.on.private_message(state=AddingRPCommand.PHOTOS)
@@ -154,7 +154,7 @@ async def set_photos(m: Message):
     m_full = (await bot.api.messages.get_by_id([m.id])).items[0]
     photos = [x.photo for x in m_full.attachments if x.type == x.type.PHOTO]
     context[m.peer_id].photos = []
-    message = (await bot.reply_msg(m, f"Загружаю фотографии 0/{len(photos)}"))[0]
+    message = (await m.reply(f"Загружаю фотографии 0/{len(photos)}"))[0]
     for i, photo in enumerate(photos):
         string = await re_upload_photo(photo, f"role_play{m.from_id}.jpg")
         context[m.peer_id].photos.append(string)

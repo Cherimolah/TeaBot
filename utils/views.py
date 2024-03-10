@@ -13,8 +13,6 @@ from utils.parsing_users import get_register_date
 
 from config import GROUP_ID
 
-screenshot_users = []
-
 
 async def set_warn(chat_id: int, from_user_id: int, to_user_id: int, closing_at: int) -> None:
     await db.add_punishment(type_pun=Punishments.WARN, to_time=closing_at or None,
@@ -55,11 +53,11 @@ async def set_warn(chat_id: int, from_user_id: int, to_user_id: int, closing_at:
 async def send_goodbye(chat_id: int, user_id: int):
     bye_msg = await db.select([db.Chat.bye_msg]).where(db.Chat.chat_id == chat_id).gino.scalar()
     if bye_msg:
-        await bot.write_msg(chat_id + 2000000000, bye_msg)
+        await bot.api.messages.send(chat_id + 2000000000, bye_msg)
         return
     await (db.UserToChat.update.values(in_chat=False)
            .where(and_(db.UserToChat.chat_id == chat_id, db.UserToChat.user_id == user_id))).gino.status()
-    await bot.write_msg(chat_id + 2000000000, f"😢 Прощай, мы тебя никогда не забудем, "
+    await bot.api.messages.send(chat_id + 2000000000, f"😢 Прощай, мы тебя никогда не забудем, "
                                              f"{await db.get_mention_user(user_id, 1)}")
 
 
@@ -81,7 +79,7 @@ async def send_hello(chat_id: int, user_id: int, invited_by: int, send_message=T
                 admin = await db.select([db.UserToChat.user_id]).where(
                     db.UserToChat.chat_id == chat_id
                 ).gino.scalar()
-            await bot.write_msg(chat_id + 2000000000,
+            await bot.api.messages.send(chat_id + 2000000000,
                                f"📄 С момента регистрации пользователя "
                                f"[id{user.id}|{user.first_name} {user.last_name}] "
                                f"прошло менее 3 дней, наверняка это бот. Если ты человек можешь написать "
@@ -98,20 +96,17 @@ async def send_hello(chat_id: int, user_id: int, invited_by: int, send_message=T
         admin, rang = await db.select([db.UserToChat.admin, db.UserToChat.rang]).where(
             and_(db.UserToChat.user_id == invited_by, db.UserToChat.chat_id == chat_id)).gino.first()
         if admin <= 0 or rang < 2:
-            await bot.write_msg(chat_id + 2000000000,
+            await bot.api.messages.send(chat_id + 2000000000,
                                f"📝 У {await db.get_mention_user(user_id, 2)} есть бан до "
                                f"{parse_unix_to_date(ban_time)} от "
                                f"[id{from_user_id}|{from_user_name if from_user_nickname is None else from_user_nickname}].\n"
                                )
-            try:
-                await bot.api.messages.remove_chat_user(chat_id, member_id=user_id)
-            except VKAPIError:
-                pass
+            await bot.api.messages.remove_chat_user(chat_id, member_id=user_id)
             return
         else:
             await db.Punishment.delete.where(and_(db.Punishment.type == 3, db.Punishment.to_user_id == user_id,
                                                   db.Punishment.chat_id == chat_id)).gino.status()
-            await bot.write_msg(
+            await bot.api.messages.send(
                 chat_id + 2000000000,
                 f"📝 У {await db.get_mention_user(user_id, 2)} есть бан до "
                 f"{parse_unix_to_date(ban_time)} от "
@@ -129,11 +124,11 @@ async def send_hello(chat_id: int, user_id: int, invited_by: int, send_message=T
         hello_msg = await db.select([db.Chat.hello_msg]).where(db.Chat.chat_id == chat_id).gino.scalar()
         user = await bot.api.users.get(user_ids=user_id)
         if hello_msg is None:
-            await bot.write_msg(chat_id + 2000000000,
+            await bot.api.messages.send(chat_id + 2000000000,
                                f"✋ Приветсвую тебя, чаеман "
                                f"[id{user_id}|{user[0].first_name} {user[0].last_name}]")
         else:
-            await bot.write_msg(chat_id + 2000000000, hello_msg)
+            await bot.api.messages.send(chat_id + 2000000000, hello_msg)
 
 
 def get_names_user(index: int, user_cases: List[UsersUserFull]) -> list:
@@ -158,7 +153,7 @@ async def waiting_punishment(punishment_id: int, to_time: Union[int, datetime]):
             .where(db.Punishment.id == punishment_id)).gino.first()
         if await bot.api.messages.is_messages_from_group_allowed(GROUP_ID, to_user_id):
             await db.Punishment.delete.where(db.Punishment.id == pun_id).gino.status()
-            await bot.write_msg(to_user_id,
+            await bot.api.messages.send(to_user_id,
                                f"🎉🎊 {await db.get_mention_user(to_user_id, 0)}, у вас закончился срок "
                                f"{'бана' if pun_type == 3 else 'варна' if pun_type == 2 else 'мута'}, выданного "
                                f"в беседе {(await bot.api.messages.get_conversations_by_id(chat_id + 2000000000)).items[0].chat_settings.title} "
@@ -169,4 +164,4 @@ async def waiting_punishment(punishment_id: int, to_time: Union[int, datetime]):
 async def remember_kombucha(user_id: int, delay: float):
     await asyncio.sleep(delay)
     if (await bot.api.messages.is_messages_from_group_allowed(GROUP_ID, user_id)).is_allowed:
-        await bot.write_msg(user_id, "⏰ Твой гриб доступен для рандома!")
+        await bot.api.messages.send(user_id, "⏰ Твой гриб доступен для рандома!")

@@ -1,3 +1,5 @@
+from typing import List
+
 from loader import bot
 from vkbottle.bot import Message, MessageEvent
 from vkbottle.dispatch.rules.base import PayloadMapRule
@@ -14,16 +16,18 @@ from utils.custom_rules import GroupInvited, UserInvited, UserLeft, UserKicked
 
 @bot.on.chat_message(GroupInvited())
 async def group_invited(m: Message):
-    await bot.write_msg(m.peer_id, "🙋‍♂ Приветствую. Для полноценного использования бота нужно выдать мне права "
+    await bot.api.messages.send(m.peer_id, "🙋‍♂ Приветствую! Я очень рад, что меня добавили)\n Для полноценного использования "
+                                   "бота нужно выдать мне права "
                                   "администратора и написать любое сообщение. Полный список команд: "
                                   "https://vk.com/@your_tea_bot-help",
                        attachment="photo-201071106_457240238_dd33c83bbd28a8545e")
-    await bot.write_msg(ADMIN_ID, f"Бот добавлен в беседу {m.chat_id}")
+    await bot.api.messages.send(ADMIN_ID, f"Бот добавлен в беседу {m.chat_id}")
 
 
 @bot.on.chat_message(UserInvited())
-async def user_invited(m: Message):
-    await send_hello(m.chat_id, m.action.member_id, m.from_id)
+async def user_invited(m: Message, users_invited: List[int]):
+    for user_id in users_invited:
+        await send_hello(m.chat_id, user_id, m.from_id)
 
 
 @bot.on.chat_message(UserKicked())
@@ -35,7 +39,7 @@ async def user_kicked_command(m: Message):
 async def user_lived_command(m: Message):
     await user_kicked_command(m)
     kb = generators.user_left_kb(m.action.member_id)
-    await bot.write_msg(m.peer_id, f"{await db.get_mention_user(m.action.member_id, 0)} Вышел из беседы. Кикнуть?",
+    await bot.api.messages.send(m.peer_id, f"{await db.get_mention_user(m.action.member_id, 0)} Вышел из беседы. Кикнуть?",
                        keyboard=kb)
 
 
@@ -56,6 +60,6 @@ async def kick_user_button(m: MessageEvent):
         await db.UserToChat.update.values(in_chat=False).where(
             and_(db.UserToChat.user_id == user_id, db.UserToChat.chat_id == m.peer_id-2000000000)
         ).gino.status()
-        await bot.change_msg(m, f"⚠ {await db.get_mention_user(user_id, 0)} исключён")
+        await m.edit_message( f"⚠ {await db.get_mention_user(user_id, 0)} исключён")
     except VKAPIError:
-        await bot.change_msg(m, f"Не могу исключить {await db.get_mention_user(user_id, 3)}")
+        await m.edit_message( f"Не могу исключить {await db.get_mention_user(user_id, 3)}")

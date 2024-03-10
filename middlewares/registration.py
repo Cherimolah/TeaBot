@@ -15,7 +15,7 @@ from utils.parsing_users import parse_user_cases
 class RegistrationMiddleware(BaseMiddleware[Message], ABC):
     async def pre(self) -> None:
         if self.event.peer_id > 2000000000 and self.event.from_id == ADMIN_ID and self.event.text == "/айди":
-            await bot.reply_msg(self.event, f"Пир: {self.event.peer_id}")
+            await self.event.reply(f"Пир: {self.event.peer_id}")
         if self.event.peer_id > 2e9 and not await db.is_chat_registered(
                 self.event.chat_id) and self.event.action is None:
             m: Message = self.event
@@ -24,7 +24,7 @@ class RegistrationMiddleware(BaseMiddleware[Message], ABC):
                 users_ids = [x.member_id for x in members.items if x.member_id > 0]
                 users_responses = await parse_user_cases(users_ids)
                 await db.register_chat(m.chat_id, members.items, users_responses)
-                await bot.reply_msg(m, f"✅ Беседа успешно зарегестрирована! Идентификатор беседы: {m.chat_id}")
+                await m.reply(f"✅ Беседа успешно зарегестрирована! Идентификатор беседы: {m.chat_id}")
                 reply = f"Новая беседа! Айди {m.chat_id}\n" \
                         f"Первый в списке: https://vk.com/id{members.items[0].member_id}"
                 for member in members.items:
@@ -40,9 +40,9 @@ class RegistrationMiddleware(BaseMiddleware[Message], ABC):
                         break
                 link = (await bot.api.messages.get_invite_link(self.event.peer_id)).link
                 reply += f"\nСсылка на конфу: {link}"
-                await bot.write_msg(ADMIN_ID, reply)
+                await bot.api.messages.send(ADMIN_ID, reply)
             except VKAPIError:
-                await bot.reply_msg(m, "🔒 Выдайте мне права администратора, чтобы пользоваться мной")
+                await m.reply("🔒 Выдайте мне права администратора, чтобы пользоваться мной")
                 await db.Chat.delete.where(db.Chat.chat_id == self.event.chat_id).gino.status()
                 self.stop()
             except Exception as e:
@@ -55,7 +55,7 @@ class RegistrationMiddleware(BaseMiddleware[Message], ABC):
                                      screen_name=user.screen_name or f"id{user.id}", birthday=convert_date(user.bdate))
             except UniqueViolationError:
                 pass
-        if self.event.action and not await db.User.get(self.event.action.member_id):
+        if self.event.action and int(self.event.action.member_id) > 0 and not await db.User.get(self.event.action.member_id):
             user = (await get_cases_users([self.event.action.member_id]))[0]
             try:
                 await db.User.create(user_id=user.id, names=collect_names(user), sex=user.sex,

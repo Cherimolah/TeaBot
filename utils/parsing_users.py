@@ -41,19 +41,19 @@ async def get_id_mention_from_message(m: Message, check_chat: bool = True, self_
             else:
                 user_id = 0
     if user_id < 0:
-        await bot.reply_msg(m, "🙅‍♂ Команда не работает с группами")
+        await m.reply("🙅‍♂ Команда не работает с группами")
         return False
     if user_id == 0:
         if not return_himself:
-            await bot.reply_msg(m, "🙅‍♂ Пользователь не указан")
+            await m.reply("🙅‍♂ Пользователь не указан")
             return False
         return m.from_id
     if self_protect and user_id == m.from_id:
-        await bot.reply_msg(m, "🙄 Не будь таким самокритичным")
+        await m.reply("🙄 Не будь таким самокритичным")
         return False
     if check_chat and not await db.is_user_in_chat(user_id, m.chat_id):
         print(user_id)
-        await bot.reply_msg(m, "🤷 Этого пользователя нет в беседе")
+        await m.reply("🤷 Этого пользователя нет в беседе")
         return False
     return user_id
 

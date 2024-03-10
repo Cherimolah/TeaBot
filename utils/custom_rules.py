@@ -1,5 +1,5 @@
 from abc import ABC
-from typing import List, Union, Tuple
+from typing import List, Union, Tuple, Dict
 import time
 
 from vkbottle.bot import Message
@@ -42,7 +42,7 @@ class ChangeSettingsChat(ABCRule, ABC):
         rang, admin = await db.select([db.UserToChat.rang, db.UserToChat.admin]).where(
             and_(db.UserToChat.user_id == m.from_id, db.UserToChat.chat_id == m.chat_id)).gino.first()
         if rang < 3 and admin < 1:
-            await bot.reply_msg(m, f"❗ Менять настройки беседы могут только обладатели ранга {rangnames[3]} и выше или "
+            await m.reply(f"❗ Менять настройки беседы могут только обладатели ранга {rangnames[3]} и выше или "
                                   "администраторы")
             return False
         return True
@@ -70,16 +70,16 @@ class AdminCommand(ABCRule, ABC):
                                                                      db.UserToChat.chat_id == m.chat_id))
                                                          ).gino.first()
                 if from_user_rang < self.min_rang and from_user_admin < 1:
-                    await bot.reply_msg(m, f"🙅‍♂ Команда доступна только с ранга {rangnames[self.min_rang]}")
+                    await m.reply(f"🙅‍♂ Команда доступна только с ранга {rangnames[self.min_rang]}")
                     return False
                 can_increase = await db.is_higher(m.chat_id, m.from_id, to_user_id)
                 if not can_increase:
-                    await bot.reply_msg(m, "🙅‍♂ Пользователь выше или одинакового с вами ранга")
+                    await m.reply("🙅‍♂ Пользователь выше или одинакового с вами ранга")
                     return False
                 if self.need_time:
                     to_time = parse_period(m)
                     if to_time == -1 or to_time - time.time() > 3153600000:  # 100 years
-                        await bot.reply_msg(m, "🤷‍♂ Неверный период")
+                        await m.reply("🤷‍♂ Неверный период")
                         return False
                     return {"to_user_id": to_user_id, "to_time": to_time}
                 return {"to_user_id": to_user_id}
@@ -144,12 +144,20 @@ invites = [
 
 class GroupInvited(ABCRule, ABC):
     async def check(self, m: Message):
-        return m.action is not None and m.action.type in invites and m.action.member_id == -GROUP_ID
+        return m.action is not None and m.action.type in invites and m.action.member_id and m.action.member_id == -GROUP_ID
 
 
 class UserInvited(ABCRule, ABC):
-    async def check(self, m: Message):
-        return m.action is not None and m.action.type in invites and m.action.member_id > 0
+    async def check(self, m: Message) -> Union[bool, Dict[str, List[int]]]:
+        if m.action and m.action.type in invites:
+            if m.action.member_id and m.action.member_id > 0:
+                return {"users_invited": [m.action.member_id]}
+            else:
+                user_ids_reg = {x[0] for x in await db.select([db.UserToChat.user_id]).where(db.UserToChat.chat_id == m.chat_id).gino.all()}
+                user_ids = {x.member_id for x in (await bot.api.messages.get_conversation_members(m.peer_id)).items if x.member_id > 0}
+                users_not_found = list(user_ids - user_ids_reg)
+                return {"users_invited": users_not_found}
+        return False
 
 
 class UserKicked(ABCRule, ABC):
@@ -161,7 +169,7 @@ class UserKicked(ABCRule, ABC):
 class UserLeft(ABCRule, ABC):
     async def check(self, m: Message):
         return m.action is not None and m.action.type == MessagesMessageActionStatus.CHAT_KICK_USER and \
-               0 < m.action.member_id == m.from_id
+               0 < int(m.action.member_id) == m.from_id
 
 
 class RPCommandRule(ABCRule, ABC):

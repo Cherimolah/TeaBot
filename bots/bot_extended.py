@@ -1,70 +1,229 @@
 import json
-from typing import List, Union
-
-from vkbottle.bot import Bot, Message, MessageEvent
-from db_api.db_engine import db
-from keyboards.private import main_kb
+import typing
+from typing import Optional, Union
+from abc import ABC
 from datetime import datetime
+
+from vkbottle_types.methods.messages import MessagesCategory
+from vkbottle_types.methods.users import UsersCategory
+from vkbottle_types.categories import APICategories
+from vkbottle_types.methods import messages
+from vkbottle.api.api import API, ABCAPI
+from vkbottle_types.responses.messages import MessagesSendUserIdsResponseItem
+from vkbottle_types.responses.users import UsersUserFull
+from vkbottle_types.responses.base import BaseBoolInt
+from vkbottle import VKAPIError, Keyboard
+from vkbottle.dispatch.views.bot import RawBotEventView, BotHandlerBasement, ABCBotMessageView, BotMessageView
+from vkbottle_types.events import BaseGroupEvent
+from vkbottle.tools.dev.mini_types.bot.message_event import MessageEventMin
+from vkbottle.tools.dev.mini_types.bot import MessageMin
+from vkbottle.tools.dev.mini_types.bot import message_min
+
 from sqlalchemy.dialects.postgresql import insert
-from vkbottle import VKAPIError, ShowSnackbarEvent
 
+from keyboards.private import main_kb
 from config import MY_PEERS
+from db_api.db_engine import db
 
 
-class MyBot(Bot):
-    """
-    Расширение класса Bot для того, чтобы отслеживать статистику по отправлениям сообщения
-    """
+class MessagesCategoryExtended(MessagesCategory):
 
-    async def reply_msg(self, m: Message, message: str = None, attachment: str = None,
-                        keyboard: str = None, disable_mentions: bool = True):
-        forward = {"peer_id": m.peer_id, "conversation_message_ids": [m.conversation_message_id], "is_reply": 1}
-        return await self.write_msg(m.peer_id, message, attachment, keyboard, disable_mentions, forward)
-
-    async def write_msg(self, peer_id: Union[int, List[int]], message: str = None, attachment: str = None, keyboard: str = None,
-                        disable_mentions: bool = True, forward: dict = None):
-        if keyboard is None and peer_id < 2000000000:
+    async def send(
+            self,
+            user_id=None,
+            random_id=0,
+            peer_id=None,
+            peer_ids=None,
+            domain=None,
+            chat_id=None,
+            user_ids=None,
+            message=None,
+            lat=None,
+            long=None,
+            attachment=None,
+            reply_to=None,
+            forward_messages=None,
+            forward=None,
+            sticker_id=None,
+            group_id=None,
+            keyboard=None,
+            template=None,
+            payload=None,
+            content_source=None,
+            dont_parse_links=None,
+            disable_mentions=True,
+            intent=None,
+            subscribe_id=None,
+            **kwargs
+    ) -> typing.Union[int, typing.List[MessagesSendUserIdsResponseItem]]:
+        if user_id:
+            peer_ids = [user_id]
+            del user_id
+        if peer_id:
+            peer_ids = [peer_id]
+            del peer_id
+        if message is None:
+            message = ""  # Set iterable
+        if isinstance(random_id, str):  # Compatible
+            message = random_id
+            random_id = 0
+        if not keyboard and len(peer_ids) == 1 and peer_ids[0] < 2_000_000_000:
             keyboard = main_kb
-        if peer_id not in MY_PEERS:
-            await (insert(db.StatsTotal).values(date=datetime.now().date(), outcome_msgs=1)
-                   .on_conflict_do_update(index_elements=[db.StatsTotal.date],
-                                          set_=dict(outcome_msgs=db.StatsTotal.outcome_msgs + 1))).gino.scalar()
-        for i in range(0, len(message), 4096):
-            message = await self.api.messages.send(peer_ids=peer_id, message=message[i:(i+1)*4096], attachment=attachment,
-                                         keyboard=keyboard, random_id=0, disable_mentions=disable_mentions,
-                                         forward=json.dumps(forward) if forward else None)
-        return message
+        count = int(len(message) // 4096)
+        msgs = []
+        for number, i in enumerate(range(0, len(message), 4096)):
+            if number < count:
+                params = {k: v for k, v in locals().items() if k not in ('self', 'message', 'attachment', 'keyboard')}
+                msgs.append(await super().send(message=message[i:i + 4096], **params))
+            else:
+                params = {k: v for k, v in locals().items() if k not in ('self', 'message')}
+                msgs.append(await super().send(message=message[i:i + 4096], **params))
+        msgs = [y for x in msgs for y in x]
+        for peer_id in peer_ids:
+            if peer_id not in MY_PEERS:
+                await (insert(db.StatsTotal).values(date=datetime.now().date(), outcome_msgs=1)
+                       .on_conflict_do_update(index_elements=[db.StatsTotal.date],
+                                              set_=dict(outcome_msgs=db.StatsTotal.outcome_msgs + 1))).gino.scalar()
+        return msgs
 
-    async def edit_msg(self, m: Message, text: str = None, attachment: str = None,
-                       keyboard: str = None, disable_mentions: bool = True, keep_forward=True):
-        await self.api.messages.edit(peer_id=m.peer_id, message=text, attachment=attachment, keyboard=keyboard,
-                                     conversation_message_id=m.conversation_message_id,
-                                     disable_mentions=disable_mentions, keep_forward_messages=keep_forward)
-        if m.peer_id not in MY_PEERS:
-            await (insert(db.StatsTotal).values(date=datetime.now().date(), income_msgs=1)
-                   .on_conflict_do_update(index_elements=[db.StatsTotal.date],
-                                          set_=dict(income_msgs=db.StatsTotal.income_msgs + 1))).gino.scalar()
+    async def remove_chat_user(
+            self,
+            chat_id: int,
+            user_id: typing.Optional[int] = None,
+            member_id: typing.Optional[int] = None,
+            **kwargs
+    ) -> int:
+        try:
+            return await super().remove_chat_user(chat_id, user_id, member_id, **kwargs)
+        except VKAPIError:
+            pass
 
-    async def send_ans(self, event: MessageEvent, message: str):
-        await self.api.messages.send_message_event_answer(event.object.event_id, event.object.user_id,
-                                                          event.object.peer_id,
-                                                          ShowSnackbarEvent(text=message).json())
-        if event.object.peer_id not in MY_PEERS:
+    async def edit(
+            self,
+            peer_id: int,
+            message: typing.Optional[str] = None,
+            lat: typing.Optional[float] = None,
+            long: typing.Optional[float] = None,
+            attachment: typing.Optional[str] = None,
+            keep_forward_messages: typing.Optional[bool] = None,
+            keep_snippets: typing.Optional[bool] = True,
+            group_id: typing.Optional[int] = None,
+            dont_parse_links: typing.Optional[bool] = None,
+            disable_mentions: typing.Optional[bool] = True,
+            message_id: typing.Optional[int] = None,
+            conversation_message_id: typing.Optional[int] = None,
+            template: typing.Optional[str] = None,
+            keyboard: typing.Optional[str] = None,
+            **kwargs
+    ) -> BaseBoolInt:
+        try:
+            response = await super().edit(peer_id, message, lat, long, attachment, keep_forward_messages,
+                                      keep_snippets, group_id, dont_parse_links, disable_mentions,
+                                      message_id, conversation_message_id, template, keyboard, **kwargs)
+            if peer_id not in MY_PEERS:
+                await (insert(db.StatsTotal).values(date=datetime.now().date(), income_msgs=1)
+                       .on_conflict_do_update(index_elements=[db.StatsTotal.date],
+                                              set_=dict(income_msgs=db.StatsTotal.income_msgs + 1))).gino.scalar()
+            return response
+        except VKAPIError:
+            await self.send(
+                peer_id=peer_id, message=message, lat=lat, attachment=attachment, group_id=group_id,
+                dont_parse_links=dont_parse_links, disable_mentions=disable_mentions, template=template,
+                keyboard=keyboard, **kwargs
+            )
+
+
+class UsersCategoryExtended(UsersCategory, ABC):
+
+    async def get(
+            self,
+            user_ids: typing.Optional[typing.List[typing.Union[int, str]]] = None,
+            fields: typing.Optional[typing.List[str]] = None,
+            name_case: typing.Optional[
+                typing.Literal["nom", "gen", "dat", "acc", "ins", "abl"]
+            ] = None,
+            **kwargs
+    ) -> typing.List[UsersUserFull]:
+        if isinstance(user_ids, list):
+            responses = [await super(UsersCategoryExtended, self).get(user_ids[i:i + 1000], fields, name_case, **kwargs)
+                         for i in range(0, len(user_ids), 1000)]
+            return [y for x in responses for y in x]
+        return await super(UsersCategoryExtended, self).get(user_ids, fields, name_case, **kwargs)
+
+
+class APICategoriesExtended(APICategories, ABC):
+    @property
+    def messages(self) -> messages.MessagesCategory:
+        return MessagesCategoryExtended(self.api_instance)
+
+    @property
+    def users(self) -> UsersCategory:
+        return UsersCategoryExtended(self.api_instance)
+
+
+class APIExtended(APICategoriesExtended, API):
+    pass
+
+
+class MessageEventMinExtended(MessageEventMin):
+
+    async def edit_message(
+            self,
+            message: Optional[str] = None,
+            lat: Optional[float] = None,
+            long: Optional[float] = None,
+            attachment: Optional[str] = None,
+            keep_forward_messages: Optional[bool] = None,
+            keep_snippets: Optional[bool] = None,
+            dont_parse_links: Optional[bool] = None,
+            template: Optional[str] = None,
+            keyboard: Optional[str] = None,
+            **kwargs,
+    ) -> int:
+        if isinstance(keyboard, Keyboard):
+            keyboard = keyboard.get_json()
+        try:
+            response = await super().edit_message(message, lat, long, attachment, keep_forward_messages, keep_snippets,
+                                                  dont_parse_links, template, keyboard, **kwargs)
+            if self.object.peer_id not in MY_PEERS:
+                await (insert(db.StatsTotal).values(date=datetime.now().date(), edited_msgs=1)
+                       .on_conflict_do_update(index_elements=[db.StatsTotal.date],
+                                              set_=dict(edited_msgs=db.StatsTotal.edited_msgs + 1))).gino.scalar()
+            return response
+        except VKAPIError:
+            await self.send_message(message=message, lat=lat, long=long, attachment=attachment,
+                                    dont_parse_links=dont_parse_links, template=template, keyboard=keyboard)
+
+    async def show_snackbar(self, text: str) -> int:
+        response = await super().show_snackbar(text)
+        if self.object.peer_id not in MY_PEERS:
             await (insert(db.StatsTotal).values(date=datetime.now().date(), answers=1)
                    .on_conflict_do_update(index_elements=[db.StatsTotal.date],
                                           set_=dict(answers=db.StatsTotal.answers + 1))).gino.scalar()
+        return response
 
-    async def change_msg(self, event: MessageEvent, text: str = None, attachment: str = None,
-                         keyboard: str = None, disable_mentions: bool = True, keep_forward=True):
-        try:
-            await self.api.messages.edit(peer_id=event.object.peer_id,
-                                       conversation_message_id=event.object.conversation_message_id,
-                                       message=text, attachment=attachment, keyboard=keyboard,
-                                     disable_mentions=disable_mentions, keep_forward_messages=keep_forward)
-        except VKAPIError:
-            await self.write_msg(event.peer_id, text, attachment, keyboard, disable_mentions)
-        if event.object.peer_id not in MY_PEERS:
-            await (insert(db.StatsTotal).values(date=datetime.now().date(), edited_msgs=1)
-                   .on_conflict_do_update(index_elements=[db.StatsTotal.date],
-                                          set_=dict(edited_msgs=db.StatsTotal.edited_msgs + 1))).gino.scalar()
+
+class RawBotEventViewExtended(RawBotEventView, ABC):
+
+    def get_event_model(
+            self, handler_basement: "BotHandlerBasement", event: dict
+    ) -> typing.Union[dict, "BaseGroupEvent"]:
+        if handler_basement.dataclass == MessageEventMin:
+            return MessageEventMinExtended(**event)
+        return super().get_event_model(handler_basement, event)
+
+
+class ABCBotMessageViewExtended(ABCBotMessageView, ABC):
+    @staticmethod
+    async def get_message(
+            event: dict, ctx_api: Union["API", "ABCAPI"], replace_mention: bool
+    ) -> "MessageMin":
+        message = message_min(event, ctx_api, replace_mention)
+        if isinstance(message.payload, str):
+            message.payload = json.loads(message.payload)
+        return message
+
+
+class BotMessageViewExtended(ABCBotMessageViewExtended, BotMessageView):
+    pass
 

@@ -19,8 +19,7 @@ class MutedUserMiddleware(BaseMiddleware[Message], ABC):
                                       db.Punishment.chat_id == self.event.chat_id))).gino.first()
             if mute is not None:
                 from_user_id, from_user_name, from_user_nickname, mute_closing_at = mute
-                await bot.reply_msg(
-                    self.event,
+                await self.event.reply(
                     f"🤐 {await db.get_mention_user(self.event.from_id, 1)} у вас мут "
                     f"{parse_unix_to_date(mute_closing_at)} "
                     f"от [id{from_user_id}|{from_user_name if from_user_nickname is None else from_user_nickname}]")

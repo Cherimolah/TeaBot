@@ -11,7 +11,7 @@ link_regex = re.compile(r"^https:/(?P<type>/|/m.)vk.com/(?P<screen_name>\w*)$")
 
 
 def parse_unix_to_date(unix_time: Union[int, float, datetime]) -> str:
-    if unix_time is None:
+    if not unix_time:
         return "навсегда"
     if isinstance(unix_time, (int, float)):
         return f'[{(datetime.utcfromtimestamp(unix_time)+timedelta(hours=3)).strftime("%d.%m.%Y %H:%M:%S МСК")}]'
@@ -76,7 +76,7 @@ def parse_period(m: Message) -> int:
             elif param in seconds:
                 total += last_number
             last_number = 0
-    return total + int(time.time()) if total > 0 else None
+    return total + int(time.time()) if total > 0 else 0
 
 
 def get_count_page(count_orders: int, step: int) -> int:
