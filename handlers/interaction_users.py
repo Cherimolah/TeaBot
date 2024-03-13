@@ -249,7 +249,7 @@ async def get_kombucha(m: Message, to_user_id: int):
 @bot.on.message(InteractionUsers("рег", False, False, True))
 async def get_registration_user(m: Message, to_user_id: int):
     register_date = await get_register_date(to_user_id)
-    user = (await bot.api.users.get(to_user_id))[0]
+    user = (await bot.api.users.get(to_user_id, name_case="gen"))[0]
     if register_date is None:
         await m.reply(f"📄 Дату регистрации [id{user.id}|{user.first_name} {user.last_name}] "
                               f"установить не удалось")
