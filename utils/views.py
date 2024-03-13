@@ -60,7 +60,7 @@ async def send_goodbye(chat_id: int, user_id: int):
     await (db.UserToChat.update.values(in_chat=False)
            .where(and_(db.UserToChat.chat_id == chat_id, db.UserToChat.user_id == user_id))).gino.status()
     await bot.api.messages.send(chat_id + 2000000000, f"😢 Прощай, мы тебя никогда не забудем, "
-                                             f"{await db.get_mention_user(user_id, 1)}")
+                                             f"{await db.get_mention_user(user_id, 0)}")
 
 
 async def send_hello(chat_id: int, user_id: int, invited_by: int, send_message=True):
