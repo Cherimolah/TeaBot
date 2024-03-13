@@ -50,9 +50,13 @@ async def echo_tea(m: Message):
 @bot.on.private_message(PayloadRule({"button": "help"}))
 @bot.on.message(Command(["помоги", "команды", "помощь", "список команд", "help", "commands"]))
 async def send_help(m: Message):
+    if m.peer_id > 2_000_000_000:
+        kb = None
+    else:
+        kb = main_kb
     await m.reply("Список команд: vk.com/@your_tea_bot-help\n\n"
                   "⚠ Если у тебя есть вопрос по работе бота можешь написать главному админу [id32650977|Илье Елесину] ⚠",
-                       attachment="article-201071106_56737_9267e7523067b92cd6", keyboard=main_kb)
+                       attachment="article-201071106_56737_9267e7523067b92cd6", keyboard=kb)
 
 
 @bot.on.message(Command(["заварить чай", "brew tea"]))
