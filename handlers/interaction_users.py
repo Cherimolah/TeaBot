@@ -236,9 +236,12 @@ async def who_online(m: Message):
     await m.reply(reply)
 
 
-@bot.on.message(InteractionUsers("гриб", True, False, True))
+@bot.on.message(InteractionUsers("гриб", False, False, True))
 async def get_kombucha(m: Message, to_user_id: int):
     kombucha = await db.select([db.User.kombucha]).where(db.User.user_id == to_user_id).gino.scalar()
+    if kombucha is None:
+        await m.reply("🤷 Не знаю этого пользователя!")
+        return
     kombucha = Decimal(kombucha).quantize(Decimal("1.000"))
     await m.reply(f"🍄 Рост гриба {await db.get_mention_user(to_user_id, 1)} составляет {kombucha} см")
 

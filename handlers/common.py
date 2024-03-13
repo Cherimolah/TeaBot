@@ -1,26 +1,28 @@
-import os
 from datetime import datetime, timedelta
-from loader import bot
-from vkbottle.bot import Message, MessageEvent
-import asyncio
-from vkbottle.dispatch.rules.base import PayloadRule, PayloadMapRule
 from random import choice, randint
-from utils.custom_rules import Command, CommandWithAnyArgs
-from vkbottle import Keyboard, Callback, KeyboardButtonColor
-from db_api.db_engine import db
-import random
 from decimal import Decimal, setcontext, Context, ROUND_HALF_UP
-from utils.parsing import get_count_page, parse_cooldown
-from vkbottle import GroupEventType
-from keyboards.private import main_kb
+import random
 import time
-from bots.uploaders import bot_photo_message_upl
+import asyncio
+import os
+
+from vkbottle.dispatch.rules.base import PayloadRule, PayloadMapRule
+from vkbottle.bot import Message, MessageEvent
+from vkbottle import Keyboard, Callback, KeyboardButtonColor
+from vkbottle import GroupEventType
 from sqlalchemy import func
 from sqlalchemy.sql import and_
-from utils.views import remember_kombucha
 from pyppeteer.errors import TimeoutError
 from aiohttp import ClientSession, ClientTimeout
 from aiohttp.client_exceptions import ClientConnectionError
+
+from utils.views import remember_kombucha, generate_text
+from loader import bot
+from utils.custom_rules import Command, CommandWithAnyArgs
+from db_api.db_engine import db
+from utils.parsing import get_count_page, parse_cooldown
+from keyboards.private import main_kb
+from bots.uploaders import bot_photo_message_upl
 
 setcontext(Context(rounding=ROUND_HALF_UP))
 screen_users = []
@@ -31,12 +33,6 @@ screen_users = []
 async def start(m: Message):
     await m.reply("✋ Приветствую тебя! Здесь ты можешь склеить мем, получить эстетику или узнать предсказание",
                        keyboard=main_kb)
-
-
-@bot.on.chat_message(Command(["чай помоги", "команды", "помощь", "список команд", "help"]))
-async def help_command(m: Message):
-    await m.reply("Список команд: vk.com/@your_tea_bot-help",
-                       attachment="article-201071106_56737_9267e7523067b92cd6")
 
 
 @bot.on.message(Command(["бот", "bot"]))
@@ -54,7 +50,8 @@ async def echo_tea(m: Message):
 @bot.on.private_message(PayloadRule({"button": "help"}))
 @bot.on.message(Command(["помоги", "команды", "помощь", "список команд", "help", "commands"]))
 async def send_help(m: Message):
-    await m.reply("Список команд: vk.com/@your_tea_bot-help",
+    await m.reply("Список команд: vk.com/@your_tea_bot-help\n\n"
+                  "⚠ Если у тебя есть вопрос по работе бота можешь написать главному админу [id32650977|Илье Елесину] ⚠",
                        attachment="article-201071106_56737_9267e7523067b92cd6", keyboard=main_kb)
 
 
@@ -256,10 +253,12 @@ async def screen_base(m: Message, url: str = None):
         await page.goto(url, {"timeout": 15*1000, 'waitUntil': 'networkidle0'})
     except TimeoutError:
         pass
-    await page.screenshot({'path': 'screenshot.png'})
+    if not os.path.exists(f"data/{m.from_id}"):
+        os.mkdir(f"data/{m.from_id}")
+    await page.screenshot({'path': f'data/{m.from_id}/screenshot.png'})
     await page.close()
-    attachment = await bot_photo_message_upl.upload('screenshot.png')
-    os.remove("screenshot.png")
+    attachment = await bot_photo_message_upl.upload(f'data/{m.from_id}/screenshot.png')
+    os.remove(f'data/{m.from_id}/screenshot.png')
     await m.reply("Держи скрин сайта", attachment=attachment)
 
 
@@ -276,7 +275,7 @@ async def screen_url(m: Message, url: str = None):
         attachment = await bot_photo_message_upl.upload(photo)
         await m.reply("🔍 Держи скрин сайта\n\nНекоторые сайты не отображаются с прокси сервера. "
                                "Для отправки запросов с основного российского сервера используйте команду "
-                               "«скринб https://example.com»",
+                               "«скрин+ https://example.com»",
                             attachment=attachment)
 
 
@@ -289,7 +288,24 @@ async def get_chance(m: Message):
 async def get_choice(m: Message):
     options = m.text[7:].split(" или ")
     if len(options) <= 1:
-        await m.reply(
-                           "🚫 Выбор должен быть минимум между двумя вариантами. Пример: «выбери красный или бараны»")
+        await m.reply("🚫 Выбор должен быть минимум между двумя вариантами. Пример: «выбери красный или бараны»")
         return
     await m.reply(f"⚖ Я выбираю «{choice(options)}»")
+
+
+@bot.on.message(Command("g"))
+@bot.on.message(Command("g", args_names=("max_chars",), null_args=False, returning_args=True))
+async def generate_text_command(m: Message, max_chars=None):
+    if not max_chars:
+        max_chars = 4096
+    try:
+        max_chars = int(max_chars)
+    except ValueError:
+        await m.reply("Неправильно указано максимальное количество символов!\n"
+                      "Значение должно быть от 1 до 4096")
+        return
+    if max_chars < 1 or max_chars > 4096:
+        await m.reply("Неправильно указано максимальное количество символов!\n"
+                      "Значение должно быть от 1 до 4096")
+        return
+    await m.reply(await generate_text(max_chars))

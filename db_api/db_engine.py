@@ -170,6 +170,14 @@ class MyDatabase(Gino):
 
         self.Event = Event
 
+        class Message(self.Model):
+            __tablename__ = "messages"
+
+            id = Column(Integer, primary_key=True)
+            text = Column(Text)
+
+        self.Message = Message
+
     async def connect(self):
         """Подключение к базе данных"""
         await self.set_bind(f"postgresql://{USER}:{PASSWORD}@{HOST}/{DATABASE}")

@@ -52,7 +52,6 @@ async def get_id_mention_from_message(m: Message, check_chat: bool = True, self_
         await m.reply("🙄 Не будь таким самокритичным")
         return False
     if check_chat and not await db.is_user_in_chat(user_id, m.chat_id):
-        print(user_id)
         await m.reply("🤷 Этого пользователя нет в беседе")
         return False
     return user_id
