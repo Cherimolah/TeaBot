@@ -1,4 +1,4 @@
-from loader import bot
+from loader import bot, evg
 from vkbottle import GroupEventType
 from vkbottle_types.events.bot_events import GroupLeave, GroupJoin, WallPostNew, LikeAdd, WallReplyNew, BoardPostNew
 from config import ADMIN_ID, GROUP_ID
@@ -29,16 +29,39 @@ async def new_post(event: WallPostNew):
 
 @bot.on.raw_event(GroupEventType.LIKE_ADD, LikeAdd)
 async def like_added(event: LikeAdd):
-    user = await bot.api.users.get(event.object.liker_id, fields="sex")
+    if event.object.liker_id > 0:
+        user = await bot.api.users.get(event.object.liker_id, fields="sex")
+        liker_name = f"[id{user[0].id}|{user[0].first_name} {user[0].last_name}]"
+        sex = user[0].sex
+    else:
+        group = await bot.api.groups.get_by_id(group_id=abs(event.object.liker_id))
+        liker_name = f"[club{group[0].id}|{group[0].name}]"
+        sex = 0
     object_type = event.object.object_type
     if object_type == LikeType.PHOTO:
         post_type = "фото"
+        await bot.api.messages.send(ADMIN_ID, f"❤  {liker_name}"
+                                              f"поставил{'а' if sex == 1 else ''} лайк на {post_type} "
+                                              f"https://vk.com/photo-{GROUP_ID}_{event.object.object_id}")
+        return
     elif object_type == LikeType.POST:
         post_type = "пост"
+        await bot.api.messages.send(ADMIN_ID, f"❤  {liker_name}"
+                                              f"поставил{'а' if sex == 1 else ''} лайк на {post_type} "
+                                              f"https://vk.com/wall-{GROUP_ID}_{event.object.object_id}")
+        return
     elif object_type == LikeType.NOTE:
         post_type = "записку"
     elif object_type == LikeType.COMMENT:
         post_type = "комментарий"
+        if not event.object.post_id:
+            post_id = (await evg.api.wall.get_comment(event.object.object_id)).items[0].post_id
+        else:
+            post_id = event.object.post_id
+        await bot.api.messages.send(ADMIN_ID, f"❤  {liker_name} "
+                                              f"поставил{'а' if sex == 1 else ''} лайк на {post_type} "
+                                              f"https://vk.com/wall-{GROUP_ID}_{post_id}?reply={event.object.object_id}")
+        return
     elif object_type == LikeType.MARKET_COMMENT:
         post_type = "комментарий в магазине"
     elif object_type == LikeType.PHOTO_COMMENT:
@@ -53,9 +76,10 @@ async def like_added(event: LikeAdd):
         post_type = "комментарий под видео"
     else:
         post_type = "неизвестным типом"
-    await bot.api.messages.send(ADMIN_ID, f"❤ [id{user[0].id}|{user[0].first_name} {user[0].last_name}] "
-                                 f"поставил{'а' if user[0].sex == 1 else ''} лайк на {post_type} "
-                                 f"https://vk.com/wall-{GROUP_ID}_{event.object.object_id}")
+    await bot.api.messages.send(ADMIN_ID, f"❤  {liker_name}"
+                                          f"поставил{'а' if sex == 1 else ''} лайк на {post_type} "
+                                          f"https://vk.com/{object_type.value}-{GROUP_ID}_{event.object.object_id}")
+
 
 
 @bot.on.raw_event(GroupEventType.WALL_REPLY_NEW, WallReplyNew)
