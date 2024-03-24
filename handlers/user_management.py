@@ -1,14 +1,18 @@
-from vkbottle.bot import Message
-from loader import bot, evg
-from utils.custom_rules import Command, CommandWithAnyArgs, InteractionUsers
-from db_api.db_engine import db
-from utils.parsing import parse_cooldown
 import time
 from decimal import Decimal
-from utils.parsing_users import get_register_date
-from config import DATE_PARSING
+
+from vkbottle.bot import Message
 from vkbottle import Keyboard, KeyboardButtonColor, Callback, OpenLink, GroupEventType
 from vkbottle_types.events.bot_events import MessageEvent
+
+from sqlalchemy import and_
+
+from loader import bot, evg
+from utils.custom_rules import Command, CommandWithAnyArgs, InteractionUsers
+from utils.parsing import parse_cooldown
+from utils.parsing_users import get_register_date
+from db_api.db_engine import db
+from config import DATE_PARSING
 
 
 @bot.on.message(Command("профиль"))
@@ -41,7 +45,8 @@ async def user_profile(m: Message, to_user_id: int = None):
             f"📄 Дата регистрации: {register_date.strftime(DATE_PARSING) if register_date else 'неизвестна'}\n"
     if m.peer_id > 2000000000:
         invited_by, joined_at = await (
-            db.select([db.UserToChat.invited_by, db.UserToChat.joined_at]).where(db.UserToChat.user_id == to_user_id).gino.first()
+            db.select([db.UserToChat.invited_by, db.UserToChat.joined_at]).where(
+                and_(db.UserToChat.user_id == to_user_id, db.UserToChat.chat_id == m.chat_id)).gino.first()
         )
         if invited_by > 0:
             invited_by_nickname, invited_by_name = await db.select([db.User.nickname, db.User.names[1]]).where(db.User.user_id == invited_by).gino.first()
