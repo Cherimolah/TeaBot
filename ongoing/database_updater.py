@@ -1,5 +1,5 @@
 import datetime
-from typing import NoReturn, List, Tuple
+from typing import NoReturn
 from utils.vkscripts import get_conversations_members
 from utils.views import send_goodbye, send_hello
 from db_api.db_engine import db

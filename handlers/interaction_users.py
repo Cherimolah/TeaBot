@@ -103,7 +103,7 @@ async def admins_command(m: Message):
     if is_group:
         members = await bot.api.messages.get_conversation_members(peer_id=m.peer_id)
         group = await bot.api.groups.get_by_id(group_ids=members.items[0].member_id)
-        reply += f"Создатель беседы:\n[club{-group[0].id}|{group[0].name}]\n\n"
+        reply += f"Создатель беседы:\n[club{abs(group[0].id)}|{group[0].name}]\n\n"
     admins = await (db.select([db.User.user_id, db.User.names[1], db.User.nickname, db.UserToChat.admin,
                               db.UserToChat.in_chat])
                     .select_from(db.User.join(db.UserToChat, db.UserToChat.user_id == db.User.user_id))

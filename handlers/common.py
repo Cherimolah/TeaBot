@@ -298,7 +298,7 @@ async def get_choice(m: Message):
 
 
 @bot.on.message(Command("g"))
-@bot.on.message(Command("g", args_names=("max_chars",), null_args=False, returning_args=True))
+@bot.on.message(Command("g ", args_names=("max_chars",), null_args=False, returning_args=True))
 async def generate_text_command(m: Message, max_chars=None):
     if not max_chars:
         max_chars = 4096
