@@ -213,7 +213,7 @@ async def get_page_kombucha(m: MessageEvent):
                        .order_by(db.User.kombucha.desc()).limit(15).offset((curr_page - 1) * 15)).gino.all()
     count_users = await db.func.count(db.User.user_id).gino.scalar()
     count_pages = get_count_page(count_users, 15)
-    reply = f"📝 Список всех грибов:\n\nСтраница{curr_page}/{count_pages}\n\n"
+    reply = f"📝 Список всех грибов:\n\nСтраница {curr_page}/{count_pages}\n\n"
     for i, user_info in enumerate(kombuchas):
         user_id, name, nickname, kombucha = user_info
         reply += f"{(curr_page - 1) * 15 + i + 1}. [id{user_id}|{nickname or name[0]}] {Decimal(kombucha).quantize(Decimal('1.000'))} см\n"
@@ -226,7 +226,7 @@ async def get_page_kombucha(m: MessageEvent):
 
 
 @bot.on.message(Command('скрин+'))
-@bot.on.message(Command('скрин+', null_args=False, returning_args=True, args_names=('url',)))
+@bot.on.message(Command('скрин+ ', null_args=False, returning_args=True, args_names=('url',)))
 async def screen_base(m: Message, url: str = None):
     if m.from_id in screen_users:
         await m.reply("⏳ У тебя уже грузится скрин. По одному, пожалуйста")
@@ -267,7 +267,7 @@ async def screen_base(m: Message, url: str = None):
 
 
 @bot.on.message(Command('скрин'))
-@bot.on.message(Command('скрин', null_args=False, returning_args=True, args_names=('url',)))
+@bot.on.message(Command('скрин ', null_args=False, returning_args=True, args_names=('url',)))
 async def screen_url(m: Message, url: str = None):
     if url is None:
         await m.reply("🤷‍♂️ Нужно добавить ссылку. Пример: «скрин https://vk.com»")

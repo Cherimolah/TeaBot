@@ -40,13 +40,13 @@ async def like_added(event: LikeAdd):
     object_type = event.object.object_type
     if object_type == LikeType.PHOTO:
         post_type = "фото"
-        await bot.api.messages.send(ADMIN_ID, f"❤  {liker_name}"
+        await bot.api.messages.send(ADMIN_ID, f"❤  {liker_name} "
                                               f"поставил{'а' if sex == 1 else ''} лайк на {post_type} "
                                               f"https://vk.com/photo-{GROUP_ID}_{event.object.object_id}")
         return
     elif object_type == LikeType.POST:
         post_type = "пост"
-        await bot.api.messages.send(ADMIN_ID, f"❤  {liker_name}"
+        await bot.api.messages.send(ADMIN_ID, f"❤  {liker_name} "
                                               f"поставил{'а' if sex == 1 else ''} лайк на {post_type} "
                                               f"https://vk.com/wall-{GROUP_ID}_{event.object.object_id}")
         return
@@ -76,10 +76,9 @@ async def like_added(event: LikeAdd):
         post_type = "комментарий под видео"
     else:
         post_type = "неизвестным типом"
-    await bot.api.messages.send(ADMIN_ID, f"❤  {liker_name}"
+    await bot.api.messages.send(ADMIN_ID, f"❤  {liker_name} "
                                           f"поставил{'а' if sex == 1 else ''} лайк на {post_type} "
                                           f"https://vk.com/{object_type.value}-{GROUP_ID}_{event.object.object_id}")
-
 
 
 @bot.on.raw_event(GroupEventType.WALL_REPLY_NEW, WallReplyNew)
