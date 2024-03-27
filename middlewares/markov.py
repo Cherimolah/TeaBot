@@ -23,7 +23,7 @@ class MarkovMiddleware(BaseMiddleware[Message], ABC):
             if text:
                 await db.Message.create(text=text)
 
-            if randint(1, 10) == 7:  # 1/10 chance
+            if randint(1, 20) == 7:  # 1/20 chance
                 await bot.api.messages.send(peer_id=self.event.peer_id,
                                             message=await generate_text(),
                                             random_id=0)
