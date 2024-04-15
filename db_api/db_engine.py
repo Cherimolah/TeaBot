@@ -254,6 +254,4 @@ class MyDatabase(Gino):
         return pun
 
 
-db = MyDatabase(bind="postgresql://postgresql:$Inkustinkust2018@127.0.0.1/tea_bot")
-asyncio.get_event_loop().run_until_complete(db.connect())
-
+db = MyDatabase()

@@ -8,9 +8,11 @@ from config import ADMIN_ID, DEBUG
 from loader import bot, app
 from ongoing.schedule import scheduler
 from ongoing.database_updater import update_users, update_users_in_chats, load_punisments
+from db_api.db_engine import db
 
 import handlers
 import middlewares
+from handlers.rp_commands import add_rp_commands
 
 
 def number_error():
@@ -35,6 +37,8 @@ async def exception(e: Exception):
 
 @app.on_event("startup")
 async def load_tasks():
+    await db.connect()
+    await add_rp_commands()
     scheduler.start()
     asyncio.create_task(update_users())
     asyncio.create_task(update_users_in_chats())
@@ -43,10 +47,7 @@ async def load_tasks():
 
 if __name__ == '__main__':
     if DEBUG:
-        scheduler.start()
-        bot.loop.create_task(update_users())
-        bot.loop.create_task(update_users_in_chats())
-        bot.loop_wrapper.on_startup.append(load_punisments())
+        bot.loop_wrapper.on_startup.append(load_tasks())
         bot.run_forever()
     else:
         uvicorn.run(app, log_level='error')

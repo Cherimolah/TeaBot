@@ -180,6 +180,3 @@ async def add_rp_commands():
         @bot.on.chat_message(RPCommandRule(com), OwnerRPCommand(user_id))
         async def role_play_handler(m: Message, command: str = None, owner: int = None):
             await role_play_command(m, command, owner)
-
-
-asyncio.get_event_loop().run_until_complete(add_rp_commands())
