@@ -24,6 +24,4 @@ secret_key = os.environ.get('SECRET_KEY')
 confirmation_code = os.environ.get('CONFIRMATION_CODE')
 DATE_PARSING = os.environ.get('DATE_PARSING')
 DEBUG = os.environ.get('DEBUG') == 'True'
-webdriver_path = os.environ.get('WEBDRIVER_PATH')
-webdriver_path = webdriver_path if webdriver_path != "default" else None
 FONT_PATH = os.environ.get('FONT_PATH')

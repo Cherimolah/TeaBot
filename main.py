@@ -5,7 +5,7 @@ import asyncio
 import uvicorn
 
 from config import ADMIN_ID, DEBUG
-from loader import bot, app, on_startup
+from loader import bot, app
 from ongoing.schedule import scheduler
 from ongoing.database_updater import update_users, update_users_in_chats, load_punisments
 
@@ -47,7 +47,6 @@ if __name__ == '__main__':
         bot.loop.create_task(update_users())
         bot.loop.create_task(update_users_in_chats())
         bot.loop_wrapper.on_startup.append(load_punisments())
-        bot.loop_wrapper.on_startup.append(on_startup())
         bot.run_forever()
     else:
         uvicorn.run(app, log_level='error')

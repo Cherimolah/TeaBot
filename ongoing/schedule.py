@@ -4,6 +4,7 @@ from db_api.db_engine import db
 from config import ADMIN_ID, GROUP_ID
 import asyncio
 from utils.scheduler import AsyncIOScheduler, Interval, Cron
+from sqlalchemy import and_
 
 scheduler = AsyncIOScheduler()
 today = datetime.now()
@@ -28,7 +29,9 @@ async def stats_notification():
 
 @scheduler.add_task(Interval(hours=1), next_run_time=next_hour)
 async def kombucha_reduce():
-    await db.User.update.values(kombucha=db.User.kombucha - 0.05).where(db.User.kombucha > 100).gino.status()
+    await db.User.update.values(kombucha=db.User.kombucha - 0.05).where(
+        and_(db.User.kombucha >= 100, db.User.kombucha < 500)).gino.status()
+    await db.User.update.values(kombucha=db.User.kombucha * 0.98).where(db.User.kombucha >= 500).gino.status()
 
 
 @scheduler.add_task(Interval(minutes=10))

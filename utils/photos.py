@@ -1,10 +1,10 @@
 import os
 
 from vkbottle_types.objects import PhotosPhoto
-from aiohttp import ClientSession
 import aiofiles
 
 from bots.uploaders import bot_photo_message_upl
+from loader import client
 
 
 def get_max_photo(photo: PhotosPhoto) -> str:
@@ -19,8 +19,7 @@ def get_max_photo(photo: PhotosPhoto) -> str:
 
 async def download_photo(photo: PhotosPhoto, name: str):
     url = get_max_photo(photo)
-    async with ClientSession() as session:
-        data = await (await session.get(url)).read()
+    data = await client.request_content(url)
     async with aiofiles.open(name, mode="wb") as file:
         await file.write(data)
 

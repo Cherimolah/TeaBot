@@ -1,7 +1,6 @@
 from typing import List, Union
 import time
 import asyncio
-import random
 
 from db_api.db_engine import db, Punishments
 from datetime import datetime
@@ -12,6 +11,7 @@ from sqlalchemy import and_
 from vkbottle_types.responses.users import UsersUserFull
 from utils.parsing_users import get_register_date
 from markovify import NewlineText
+from sqlalchemy import func
 
 from config import GROUP_ID
 
@@ -169,8 +169,8 @@ async def remember_kombucha(user_id: int, delay: float):
         await bot.api.messages.send(user_id, "⏰ Твой гриб доступен для рандома!")
 
 
-async def generate_text(max_chars: int = 4096):
-    history = [x[0] for x in await db.select([db.Message.text]).gino.all()]
+async def generate_text(max_chars: int = 4096) -> str:
+    history = [x[0] for x in await db.select([db.Message.text]).order_by(func.random()).limit(5000).gino.all()]
     text_model = NewlineText(input_text="\n".join(history), state_size=1, well_formed=False)
     return text_model.make_short_sentence(
         max_chars=max_chars, tries=100

@@ -52,7 +52,6 @@ class MyDatabase(Gino):
             kombucha = Column(DECIMAL, nullable=False, default=0)
             kombucha_date = Column(TIMESTAMP, default=datetime.now)
             ext_nick = Column(Boolean, default=False)
-            screen_plus = Column(Boolean, default=False)
             balance = Column(Integer, default=0)
             description = Column(VARCHAR(256))
             boost_kombucha = Column(Boolean, default=False)

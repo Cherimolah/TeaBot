@@ -1,8 +1,6 @@
 import os
 
-import aiohttp
-
-from loader import bot
+from loader import bot, client
 from vkbottle.bot import Message, Bot
 from config import ADMIN_ID, BOT_TOKEN
 from db_api.db_engine import db
@@ -43,9 +41,7 @@ async def get_attachment_string(m: Message):
     for attachment in message.attachments:
         if attachment.type == MessagesMessageAttachmentType.PHOTO:
             link_photo = get_link_max_photo(attachment.photo)
-            async with aiohttp.ClientSession() as session:
-                response = await session.get(link_photo)
-                photo = await response.read()
+            photo = await client.request_raw(link_photo)
             string_at += await photo_m.upload(photo)
             await m.reply(string_at)
 

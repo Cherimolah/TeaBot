@@ -18,12 +18,16 @@ from vkbottle_types.events import BaseGroupEvent
 from vkbottle.tools.dev.mini_types.bot.message_event import MessageEventMin
 from vkbottle.tools.dev.mini_types.bot import MessageMin
 from vkbottle.tools.dev.mini_types.bot import message_min
+from vkbottle.http.aiohttp import AiohttpClient
 
 from sqlalchemy.dialects.postgresql import insert
+from aiohttp import ClientSession, ClientResponse, TCPConnector, ClientTimeout
 
 from keyboards.private import main_kb
 from config import MY_PEERS
 from db_api.db_engine import db
+
+connector = TCPConnector(ssl=False)
 
 
 class MessagesCategoryExtended(MessagesCategory):
@@ -226,4 +230,24 @@ class ABCBotMessageViewExtended(ABCBotMessageView, ABC):
 
 class BotMessageViewExtended(ABCBotMessageViewExtended, BotMessageView):
     pass
+
+
+class AioHTTPClientExtended(AiohttpClient, ABC):
+
+    async def request_raw(
+        self,
+        url: str,
+        method: str = "GET",
+        data: Optional[dict] = None,
+        **kwargs,
+    ) -> "ClientResponse":
+        if not self.session:
+            self.session = ClientSession(
+                json_serialize=self.json_processing_module.dumps,
+                connector=connector,
+                **self._session_params,
+            )
+        async with self.session.request(url=url, method=method, data=data, **kwargs) as response:
+            await response.read()
+            return response
 

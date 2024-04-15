@@ -1,9 +1,8 @@
 import time
 from decimal import Decimal
 
-from vkbottle.bot import Message
+from vkbottle.bot import Message, MessageEvent
 from vkbottle import Keyboard, KeyboardButtonColor, Callback, OpenLink, GroupEventType
-from vkbottle_types.events.bot_events import MessageEvent
 
 from sqlalchemy import and_
 
@@ -23,9 +22,9 @@ from config import DATE_PARSING
 async def user_profile(m: Message, to_user_id: int = None):
     if not to_user_id:
         to_user_id = m.from_id
-    name, nickname, ext_nick, boost_kombucha, balance, kombucha, kombucha_time, description, screen_plus = await (
+    name, nickname, ext_nick, boost_kombucha, balance, kombucha, kombucha_time, description = await (
         db.select([db.User.names[1], db.User.nickname, db.User.ext_nick, db.User.boost_kombucha, db.User.balance,
-                   db.User.kombucha, db.User.kombucha_date, db.User.description, db.User.screen_plus]).where(
+                   db.User.kombucha, db.User.kombucha_date, db.User.description]).where(
             db.User.user_id == to_user_id)
     ).gino.first()
     kombucha = Decimal(kombucha).quantize(Decimal("1.000"))
@@ -36,8 +35,7 @@ async def user_profile(m: Message, to_user_id: int = None):
             f"👲 Твой никнейм: {nickname if nickname is not None else ''}\n" \
             f"👑 Возможность устанавливать расширенный ник: {'есть ✅' if ext_nick else 'нету ❌'}\n" \
             f"🛡 Защита от уменьшения гриба при рандоме: {'есть ✅' if boost_kombucha else 'нету ❌'}\n" \
-            f"💰 На счету: {balance}🧊\n" \
-            f"🎥 Команда скрин+: {'есть ✅' if screen_plus else 'нету ❌'}\n" \
+            f"💰 На счету: {balance}🧊\n"\
             f"🍄 Рост гриба: {kombucha} см\n" \
             f"⌚ Рандом гриба доступен через: " \
             f"{'сейчас' if (time.time() - kombucha_time) > 10800 else parse_cooldown(kombucha_time + 10800 - int(time.time()))}\n" \
@@ -81,18 +79,6 @@ async def buy_vip(m: Message):
                           f"Чтобы пополнить баланс введите «пополнить баланс»")
 
 
-@bot.on.message(Command("купить скрин+"))
-async def buy_vip(m: Message):
-    balance = await db.User.select('balance').where(db.User.user_id == m.from_id).gino.scalar()
-    if balance >= 40:
-        await (db.User.update.values(ext_nick=True, balance=db.User.balance - 40)
-               .where(db.User.user_id == m.from_id)).gino.status()
-        await m.reply("🎉 Супер! Теперь ты можешь использовать команду «скрин+»")
-        return
-    await m.reply(f"🪫 Для покупки расширенной команды скрин нужно 40 кубиков сахара 🧊. У вас доступно {balance} 🧊\n"
-                          f"Чтобы пополнить баланс введите «пополнить баланс»")
-
-
 @bot.on.message(Command("купить защиту"))
 async def buy_defend(m: Message):
     balance = await db.User.select('balance').where(db.User.user_id == m.from_id).gino.scalar()
@@ -110,7 +96,8 @@ async def buy_defend(m: Message):
 async def buy_sugar(m: Message, amount: int = None):
     from loader import qiwi
     bill = await qiwi.bill(amount=amount, lifetime=15, comment=f"{m.from_id}")
-    url = f"http://195.133.1.178/qiwiredirect?invoice_uid={bill.pay_url[-36:]}"
+    print(bill.pay_url)
+    url = f"https://everybots.ru/qiwiredirect?invoice_uid={bill.pay_url[-36:]}"
     kb = Keyboard(inline=True).add(OpenLink(url, "Оплатить", {"bill_redirect": bill.bill_id}),
                                    KeyboardButtonColor.SECONDARY)
     kb.row()
@@ -130,4 +117,4 @@ async def confirm_buy_sugar(m: MessageEvent):
         return
     await db.User.update.values(balance=db.User.balance+int(float(bill.amount))).where(
         db.User.user_id == int(bill.comment)).gino.status()
-    await m.edit_message( "🎉 Баланс успешно пополнен!")
+    await m.edit_message("🎉 Баланс успешно пополнен!")

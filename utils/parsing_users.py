@@ -1,8 +1,7 @@
 from vkbottle.bot import Message
 import re
-from loader import bot
+from loader import bot, client
 from typing import Union
-from aiohttp import ClientSession
 from bs4 import BeautifulSoup
 from datetime import datetime
 from typing import Optional
@@ -58,9 +57,8 @@ async def get_id_mention_from_message(m: Message, check_chat: bool = True, self_
 
 
 async def get_register_date(user_id: int) -> Optional[datetime]:
-    async with ClientSession() as session:
-        response = await session.get(f"https://vk.com/foaf.php?id={user_id}")
-        text = await response.text()
+    data = await client.request_raw(f"https://vk.com/foaf.php?id={user_id}")
+    text = await data.text()
     soup = BeautifulSoup(text, "lxml")
     reg_dateime = soup.find("ya:created")
     if not reg_dateime:
@@ -72,7 +70,7 @@ async def get_register_date(user_id: int) -> Optional[datetime]:
 
 
 async def parse_user_cases(users_ids: list):
-    "Получает пользователей со всеми падежами без лимита на 999 пользователей"
+    """Получает пользователей со всеми падежами без лимита на 999 пользователей"""
     users_ids_chunks = list(chunks(999, users_ids))  # Разбиваем по 999, т.к. вк за раз больше не принимает
     # Инфа о пользователях разбитая на чанки
     users_chunks_responses = [await get_cases_users(x) for x in users_ids_chunks]

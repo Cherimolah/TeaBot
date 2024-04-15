@@ -2,8 +2,9 @@ from typing import List
 from loader import bot
 import json
 
-from aiohttp import ClientSession
 from vkbottle_types.responses.users import UsersUserFull
+
+from loader import client
 
 
 name_cases = ("nom", "gen", "dat", "acc", "ins", "abl")
@@ -22,12 +23,9 @@ async def get_conversations_members(peer_ids: List[int]) -> dict:
         requests.append(f"[API.messages.getConversationMembers({json.dumps(request)}), {request['peer_id']}]")
     code = f'return [{",".join(requests)}];'
     url = f"{bot.api.API_URL}/execute"
-    async with ClientSession() as session:
-        response = await session.get(url, params={"code": code,
+    data = await client.request_json(url, params={"code": code,
                                                   "v": bot.api.API_VERSION,
                                                   "access_token": await bot.api.token_generator.get_token()})
-        data = await response.json(encoding="utf-8")
     if False in data['response']:
         data['response'].remove(False)
     return data['response']
-

@@ -34,6 +34,10 @@ async def glue_photos(m: Message):
     if len(message.attachments) == 1:
         await m.reply("Для склейки надо больше 1 фотки")
         return
+    if len(message.attachments) > 5:
+        await m.reply("😢 К сожалению, я работаю на не самом мощном сервере, обработка больше 5 фоток для меня выходит "
+                      "очень тяжело. Поддержи проект и возможно в будущем склейка вернётся")
+        return
     glue_users[m.from_id] = {"photos": [get_max_photo(x.photo) for x in message.attachments],
                              "format": None, "boards": None}
     message = await m.reply("Выбери формат склейки:", keyboard=formats[len(message.attachments)-2])

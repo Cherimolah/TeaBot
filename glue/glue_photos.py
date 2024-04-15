@@ -1,16 +1,15 @@
 from typing import List
 from PIL import Image
 from io import BytesIO
-from aiohttp.client import ClientSession
+
+from loader import client
 
 
 async def _get_photos(sizes: List[str]) -> list:
     photos = []
-    async with ClientSession() as session:
-        for url in sizes:
-            async with session.get(url) as resp:
-                image_data = await resp.read()
-                photos.append(Image.open(BytesIO(image_data)))
+    for url in sizes:
+        image_data = await client.request_content(url)
+        photos.append(Image.open(BytesIO(image_data)))
     return photos
 
 

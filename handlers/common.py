@@ -4,7 +4,6 @@ from decimal import Decimal, setcontext, Context, ROUND_HALF_UP
 import random
 import time
 import asyncio
-import os
 
 from vkbottle.dispatch.rules.base import PayloadRule, PayloadMapRule
 from vkbottle.bot import Message, MessageEvent
@@ -12,9 +11,6 @@ from vkbottle import Keyboard, Callback, KeyboardButtonColor
 from vkbottle import GroupEventType
 from sqlalchemy import func
 from sqlalchemy.sql import and_
-from pyppeteer.errors import TimeoutError
-from aiohttp import ClientSession, ClientTimeout
-from aiohttp.client_exceptions import ClientConnectionError
 
 from utils.views import remember_kombucha, generate_text
 from loader import bot
@@ -23,6 +19,7 @@ from db_api.db_engine import db
 from utils.parsing import get_count_page, parse_cooldown
 from keyboards.private import main_kb
 from bots.uploaders import bot_photo_message_upl
+from loader import client
 
 setcontext(Context(rounding=ROUND_HALF_UP))
 screen_users = []
@@ -32,7 +29,7 @@ screen_users = []
 @bot.on.private_message(Command(["меню", "главное меню", "начать", "старт", "start"]))
 async def start(m: Message):
     await m.reply("✋ Приветствую тебя! Здесь ты можешь склеить мем, получить эстетику или узнать предсказание",
-                       keyboard=main_kb)
+                  keyboard=main_kb)
 
 
 @bot.on.message(Command(["бот", "bot"]))
@@ -56,7 +53,7 @@ async def send_help(m: Message):
         kb = main_kb
     await m.reply("Список команд: vk.com/@your_tea_bot-help\n\n"
                   "⚠ Если у тебя есть вопрос по работе бота можешь написать главному админу [id32650977|Илье Елесину] ⚠",
-                       attachment="article-201071106_56737_9267e7523067b92cd6", keyboard=kb)
+                  attachment="article-201071106_56737_9267e7523067b92cd6", keyboard=kb)
 
 
 @bot.on.message(Command(["заварить чай", "brew tea"]))
@@ -83,7 +80,7 @@ async def aesthetic(m: Message):
 async def send_prediction(m: Message):
     prediction = await db.Prediction.query.order_by(func.random()).limit(1).gino.first()
     await m.reply(f"🔮 Вам выпала фигура: {prediction.figure_name}\n"
-                          f"📄 Значение: {prediction.mean}", attachment=prediction.picture)
+                  f"📄 Значение: {prediction.mean}", attachment=prediction.picture)
 
 
 @bot.on.private_message(PayloadRule({"button": "glue"}))
@@ -103,7 +100,7 @@ async def kombucha_rand(m: Message):
     t1: datetime = await db.User.select('kombucha_date').where(db.User.user_id == m.from_id).gino.scalar()
     if (datetime.now() - t1) < timedelta(hours=3):
         await m.reply(f"⏳ Команда доступна каждые 3 часа. Следующий раз можно использовать через "
-                              f"{parse_cooldown(int(time.mktime((t1 + timedelta(hours=3)).timetuple()) - time.time()))}")
+                      f"{parse_cooldown(int(time.mktime((t1 + timedelta(hours=3)).timetuple()) - time.time()))}")
         return
     if await db.User.select('boost_kombucha').where(db.User.user_id == m.from_id).gino.scalar():
         percent = random.randint(0, 10)
@@ -159,7 +156,7 @@ async def get_kombucha_list(m: Message):
 
 
 @bot.on.chat_message(Command(["все грибы беседы", "список грибов беседы", "рейтинг беседы", "топ грибов беседы",
-                             "rating conf", "грибы топ беседы", "грибы беседы"]))
+                              "rating conf", "грибы топ беседы", "грибы беседы"]))
 async def kombucha_list_conf(m: Message):
     kombuchas = await (db.User.select('user_id', 'names', 'nickname', 'kombucha')
                        .select_from(db.User.join(db.UserToChat, db.UserToChat.user_id == db.User.user_id))
@@ -187,10 +184,10 @@ async def get_page_kombucha(m: MessageEvent):
     curr_page = m.payload["kombucha_page"]
     kombuchas = await (db.User.select('user_id', 'names', 'nickname', 'kombucha')
                        .select_from(db.User.join(db.UserToChat, db.UserToChat.user_id == db.User.user_id))
-                       .where(and_(db.UserToChat.in_chat.is_(True), db.UserToChat.chat_id == m.peer_id-2000000000))
+                       .where(and_(db.UserToChat.in_chat.is_(True), db.UserToChat.chat_id == m.peer_id - 2000000000))
                        .order_by(db.User.kombucha.desc()).limit(15).offset((curr_page - 1) * 15)).gino.all()
     count_users = await (db.select([db.func.count()])
-                         .where(and_(db.UserToChat.in_chat.is_(True), db.UserToChat.chat_id == m.peer_id-2000000000))
+                         .where(and_(db.UserToChat.in_chat.is_(True), db.UserToChat.chat_id == m.peer_id - 2000000000))
                          .gino.scalar())
     count_pages = get_count_page(count_users, 15)
     reply = "📝 Список всех грибов:\n\nПоказан общий список грибов. Чтобы посмотреть грибы участников беседы, введите " \
@@ -203,7 +200,7 @@ async def get_page_kombucha(m: MessageEvent):
         kb.add(Callback("⬅", {"kombucha_page": curr_page - 1}), KeyboardButtonColor.SECONDARY)
     if curr_page < count_pages:
         kb.add(Callback("➡", {"kombucha_page": curr_page + 1}), KeyboardButtonColor.SECONDARY)
-    await m.edit_message( reply, keyboard=kb)
+    await m.edit_message(reply, keyboard=kb.get_json())
 
 
 @bot.on.raw_event(GroupEventType.MESSAGE_EVENT, MessageEvent, PayloadMapRule({"kombucha_page_total": int}))
@@ -222,48 +219,7 @@ async def get_page_kombucha(m: MessageEvent):
         kb.add(Callback("⬅", {"kombucha_page_total": curr_page - 1}), KeyboardButtonColor.SECONDARY)
     if curr_page < count_pages:
         kb.add(Callback("➡", {"kombucha_page_total": curr_page + 1}), KeyboardButtonColor.SECONDARY)
-    await m.edit_message(reply, keyboard=kb)
-
-
-@bot.on.message(Command('скрин+'))
-@bot.on.message(Command('скрин+ ', null_args=False, returning_args=True, args_names=('url',)))
-async def screen_base(m: Message, url: str = None):
-    if m.from_id in screen_users:
-        await m.reply("⏳ У тебя уже грузится скрин. По одному, пожалуйста")
-        return
-    screen_plus = await db.select([db.User.screen_plus]).where(db.User.user_id == m.from_id).gino.scalar()
-    if not screen_plus:
-        await m.reply("🚫 Команда доступна для тех, у кого есть опция скрин+\n\n"
-                               "Напиши «купить скрин+»")
-        return
-    if url is None:
-        await m.reply("🤷‍♂️ Нужно добавить ссылку. Пример: «скринб https://vk.com»")
-        return
-    if not url.startswith("https://") and not url.startswith("http://"):
-        url = f"https://{url}"
-    await m.reply("🎥 Чайник достаёт свой фотоаппарат")
-    async with ClientSession(timeout=ClientTimeout(5)) as session:
-        try:
-            response = await session.get(url)
-        except ClientConnectionError:
-            await m.reply("❌ Адрес недоступен!")
-        if not str(response.status).startswith('2'):
-            await m.reply("❌ Сервер вернул неуспешный ответ!")
-            return
-    from loader import browser
-    page = await browser.newPage()
-    await page.setViewport({'width': 1920, 'height': 1080})
-    try:
-        await page.goto(url, {"timeout": 15*1000, 'waitUntil': 'networkidle0'})
-    except TimeoutError:
-        pass
-    if not os.path.exists(f"data/{m.from_id}"):
-        os.mkdir(f"data/{m.from_id}")
-    await page.screenshot({'path': f'data/{m.from_id}/screenshot.png'})
-    await page.close()
-    attachment = await bot_photo_message_upl.upload(f'data/{m.from_id}/screenshot.png')
-    os.remove(f'data/{m.from_id}/screenshot.png')
-    await m.reply("Держи скрин сайта", attachment=attachment)
+    await m.edit_message(reply, keyboard=kb.get_json())
 
 
 @bot.on.message(Command('скрин'))
@@ -273,14 +229,9 @@ async def screen_url(m: Message, url: str = None):
         await m.reply("🤷‍♂️ Нужно добавить ссылку. Пример: «скрин https://vk.com»")
         return
     await m.reply("🎥 Чайник достаёт свой фотоаппарат")
-    async with ClientSession() as session:
-        response = await session.get(f"https://mini.s-shot.ru/1920x1080/1024/png/?{url}")
-        photo = await response.read()
-        attachment = await bot_photo_message_upl.upload(photo)
-        await m.reply("🔍 Держи скрин сайта\n\nНекоторые сайты не отображаются с прокси сервера. "
-                               "Для отправки запросов с основного российского сервера используйте команду "
-                               "«скрин+ https://example.com»",
-                            attachment=attachment)
+    photo = await client.request_raw(f"https://mini.s-shot.ru/1920x1080/1024/png/?{url}")
+    attachment = await bot_photo_message_upl.upload(photo)
+    await m.reply("🔍 Держи скрин сайта\n\n", attachment=attachment)
 
 
 @bot.on.message(CommandWithAnyArgs("инфа "))

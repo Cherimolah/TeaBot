@@ -6,17 +6,17 @@ from vkbottle.bot import Bot
 from vkbottle.framework.labeler.bot import BotLabeler
 from pyqiwip2p import AioQiwiP2P
 from db_api.db_engine import db
-from pyppeteer import launch
 from fastapi import FastAPI, BackgroundTasks, Request, Response
 
-from bots.bot_extended import APIExtended, RawBotEventViewExtended, BotMessageViewExtended
-from config import BOT_TOKEN, USER_TOKEN, QIWI_TOKEN, confirmation_code, secret_key, GROUP_ID, webdriver_path
+from bots.bot_extended import APIExtended, RawBotEventViewExtended, BotMessageViewExtended, AioHTTPClientExtended
+from config import BOT_TOKEN, USER_TOKEN, QIWI_TOKEN, confirmation_code, secret_key, GROUP_ID
 
+client = AioHTTPClientExtended()
 
-bot = Bot(api=APIExtended(BOT_TOKEN),
+bot = Bot(api=APIExtended(BOT_TOKEN, http_client=client),
           labeler=BotLabeler(raw_event_view=RawBotEventViewExtended(),
                              message_view=BotMessageViewExtended()))
-evg = User(USER_TOKEN)
+evg = User(api=APIExtended(USER_TOKEN, http_client=AioHTTPClientExtended()))
 
 qiwi = AioQiwiP2P(QIWI_TOKEN)
 
@@ -24,7 +24,6 @@ loguru.logger.remove()
 loguru.logger.add(sys.stdout, level="INFO")
 
 app = FastAPI()
-browser = None
 
 
 @app.post('/tea_bot')
@@ -45,20 +44,3 @@ async def handle_callback(request: Request, background_task: BackgroundTasks):
         background_task.add_task(bot.process_event, data)
         await db.Event.create(event_id=data['event_id'])
     return Response("ok")
-
-
-@app.on_event("startup")
-async def on_startup():
-    await db.connect()
-    global browser
-    browser = await launch(
-        headless=True,
-        executablePath=webdriver_path,
-        args=[
-            '--no-sandbox',
-            '--single-process',
-            '--disable-dev-shm-usage',
-            '--disable-gpu',
-            '--no-zygote',
-            '--disable-setuid-sandbox'
-        ])
