@@ -81,7 +81,6 @@ class AsyncIOScheduler:
         return wrapper
 
     def start(self):
-        loop = asyncio.get_event_loop()
         for task in self.tasks:
-            loop.create_task(task())
+            asyncio.create_task(task())
 

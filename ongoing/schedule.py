@@ -8,7 +8,7 @@ from sqlalchemy import and_
 
 scheduler = AsyncIOScheduler()
 today = datetime.now()
-next_minute = datetime(today.year, today.month, today.day, today.hour, 0, 0) + timedelta(minutes=1)
+next_minute = datetime(today.year, today.month, today.day, today.hour, today.minute, 0) + timedelta(minutes=1)
 next_hour = datetime(today.year, today.month, today.day, today.hour, 0, 0) + timedelta(hours=1)
 
 
@@ -20,11 +20,11 @@ async def stats_notification():
         await bot.api.messages.send(ADMIN_ID, f"За {day.strftime('%d.%m.%Y')} статистики нет")
     else:
         await bot.api.messages.send(ADMIN_ID, f"Статистика за {day.strftime('%d.%m.%Y')}:\n\n"
-                                     f"Принято сообщений: {stats[1]}\n"
-                                     f"Отправлено сообщений: {stats[2]}\n"
-                                     f"Отредактировано сообщений: {stats[3]}\n"
-                                     f"Отправлено ответов: {stats[4]}\n\n"
-                                     f"Общая активность: {stats[1] + stats[2] + stats[3] + stats[4]}")
+                                              f"Принято сообщений: {stats[1]}\n"
+                                              f"Отправлено сообщений: {stats[2]}\n"
+                                              f"Отредактировано сообщений: {stats[3]}\n"
+                                              f"Отправлено ответов: {stats[4]}\n\n"
+                                              f"Общая активность: {stats[1] + stats[2] + stats[3] + stats[4]}")
 
 
 @scheduler.add_task(Interval(hours=1), next_run_time=next_hour)
@@ -42,13 +42,13 @@ async def set_online():
         pass
 
 
-@scheduler.add_task(Interval(hours=12), next_run_time=next_minute)
+@scheduler.add_task(Interval(seconds=5), next_run_time=next_minute)
 async def update_stickers():
     last_id = await db.select([db.Sticker.id]).order_by(db.Sticker.id.desc()).limit(1).gino.scalar()
     if not last_id:
         last_id = 0
     st_info = await evg.api.request("store.getStockItems", {"type": "stickers",
-                                                               "product_ids": list(range(last_id+1, last_id+150))})
+                                                            "product_ids": list(range(last_id + 1, last_id + 150))})
     packs = st_info['response']['items']
     for pack in packs:
         if not pack:
@@ -77,8 +77,9 @@ async def congratulation_birthday():
             reply += "Желаю тебе счастья, здоровья, успехов и всего самого наилучшего! Пей побольше чая и поменьше кофе"
             for chat_id in chat_ids:
                 await bot.api.messages.send(chat_id + 2000000000, reply,
-                                    attachment="photo-201071106_457240771_7de9eaa806e40d06be", disable_mentions=False)
+                                            attachment="photo-201071106_457240771_7de9eaa806e40d06be",
+                                            disable_mentions=False)
                 await asyncio.sleep(0.2)
             if not chat_ids:
                 await bot.api.messages.send(user_id, reply, attachment="photo-201071106_457240771_7de9eaa806e40d06be",
-                                    disable_mentions=False)
+                                            disable_mentions=False)

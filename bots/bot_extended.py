@@ -21,13 +21,11 @@ from vkbottle.tools.dev.mini_types.bot import message_min
 from vkbottle.http.aiohttp import AiohttpClient
 
 from sqlalchemy.dialects.postgresql import insert
-from aiohttp import ClientSession, ClientResponse, TCPConnector, ClientTimeout
+from aiohttp import ClientSession, ClientResponse, TCPConnector
 
 from keyboards.private import main_kb
 from config import MY_PEERS
 from db_api.db_engine import db
-
-connector = TCPConnector(ssl=False)
 
 
 class MessagesCategoryExtended(MessagesCategory):
@@ -241,6 +239,7 @@ class AioHTTPClientExtended(AiohttpClient, ABC):
         data: Optional[dict] = None,
         **kwargs,
     ) -> "ClientResponse":
+        connector = TCPConnector(ssl=False)
         if not self.session:
             self.session = ClientSession(
                 json_serialize=self.json_processing_module.dumps,
