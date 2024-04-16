@@ -84,7 +84,3 @@ async def congratulation_birthday():
             if not chat_ids:
                 await bot.api.messages.send(user_id, reply, attachment="photo-201071106_457240771_7de9eaa806e40d06be",
                                             disable_mentions=False)
-
-
-async def aa():
-    pass
