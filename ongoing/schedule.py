@@ -63,13 +63,14 @@ async def congratulation_birthday():
     for user_id, birthday in user_ids:
         if birthday.month == now.month and birthday.day == now.day:
             chat_ids = [x[0] for x in
-                        await db.select([db.UserToChat.chat_id]).where(db.UserToChat.user_id == user_id).gino.all()]
+                        await db.select([db.UserToChat.chat_id]).where(
+                            and_(db.UserToChat.user_id == user_id, db.UserToChat.in_chat.is_(True))).gino.all()]
             reply = f"🎉🎊 Поздравляем {await db.get_mention_user(user_id, 3)} с Днём Рождения!!\n"
             if birthday.year != 1800:
                 reply += f"Сегодня тебе исполняется {now.year - birthday.year} лет! "
             else:
                 reply += "Сегодня тебе исполняется... Та хер его знает сколько тебе исполняется. Поскрывают года " \
-                         "в своих прфилях, а я потом гадать должен! Но, наверное, ты уже "
+                         "в своих профилях, а я потом гадать должен! Но, наверное, ты уже "
                 if await db.is_woman_user(user_id):
                     reply += "взрослая крутая асинхронная тян! "
                 else:
