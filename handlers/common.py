@@ -27,6 +27,7 @@ screen_users = []
 
 @bot.on.raw_event(GroupEventType.MESSAGE_EVENT, MessageEvent, PayloadRule({"command": "start"}))
 @bot.on.private_message(Command(["меню", "главное меню", "начать", "старт", "start"]))
+@bot.on.private_message(PayloadRule({"command": "start"}))
 async def start(m: Message):
     await m.reply("✋ Приветствую тебя! Здесь ты можешь склеить мем, получить эстетику или узнать предсказание",
                   keyboard=main_kb)

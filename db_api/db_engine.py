@@ -5,7 +5,7 @@ from datetime import datetime
 
 from gino import Gino
 from vkbottle_types.codegen.objects import MessagesConversationMember
-from sqlalchemy import Column, BigInteger, ARRAY, VARCHAR, SmallInteger, DECIMAL, Boolean, Integer, sql, Index, Text
+from sqlalchemy import Column, BigInteger, ARRAY, VARCHAR, SmallInteger, DECIMAL, Boolean, Integer, sql, Index, Text, JSON
 from sqlalchemy import ForeignKey, TIMESTAMP, Date, and_
 from sqlalchemy.dialects.postgresql import insert
 
@@ -57,6 +57,9 @@ class MyDatabase(Gino):
             boost_kombucha = Column(Boolean, default=False)
             birthday = Column(Date)
             reaction = Column(Integer)
+            dollars = Column(Integer, server_default="4999")
+            win_dollars = Column(Integer, server_default="0")
+            wins = Column(Integer, server_default="0")
 
             _idx = Index("users_ids_idx", "user_id")
 
@@ -176,6 +179,22 @@ class MyDatabase(Gino):
             text = Column(Text)
 
         self.Message = Message
+
+        class RouletteGame(self.Model):
+            __tablename__ = 'roulette_games'
+
+            id = Column(Integer, primary_key=True)
+            player_1 = Column(BigInteger, ForeignKey('users.user_id'), on_delete='CASCADE')
+            player_2 = Column(BigInteger, ForeignKey('users.user_id'), on_delete='CASCADE')
+            items = Column(JSON)
+            step = Column(Integer)
+            lives_1 = Column(Integer)
+            lives_2 = Column(Integer)
+            round_number = Column(Integer)
+            tea = Column(Integer)
+            coffee = Column(Integer)
+
+        self.RouletteGame = RouletteGame
 
     async def connect(self):
         """Подключение к базе данных"""

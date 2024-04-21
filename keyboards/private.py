@@ -1,7 +1,8 @@
 from vkbottle import Keyboard, KeyboardButtonColor, Text, Callback
 
-
 main_kb = Keyboard()
+main_kb.add(Text("🍵☕ Чайная рулетка", {"main_menu": "roulette"}), KeyboardButtonColor.PRIMARY)
+main_kb.row()
 main_kb.add(Text("🛠 Склеить мем", {"button": "glue"}), KeyboardButtonColor.POSITIVE)
 main_kb.add(Text("🔮 Узнать предсказание", {"button": "get_prediction"}), KeyboardButtonColor.NEGATIVE)
 main_kb.row()
@@ -68,3 +69,50 @@ boards.add(Callback("Белая рамка", {"boards": True, "color": "white"})
 boards.add(Callback("Черная рамка", {"boards": True, "color": "black"}), KeyboardButtonColor.NEGATIVE).row()
 boards.add(Callback("Без рамки", {"boards": False, "color": "white"}), KeyboardButtonColor.PRIMARY)
 
+
+roulette = Keyboard().add(
+    Text("Играть с ботом", {"roulette": "bot"}), KeyboardButtonColor.SECONDARY
+).row().add(
+    Text("Найти игрока", {"roulette": "player"}), KeyboardButtonColor.PRIMARY
+).row().add(
+    Text("Назад", {"command": "start"}), KeyboardButtonColor.NEGATIVE
+)
+
+
+def get_bets(player: bool):
+    bets = Keyboard().add(
+        Text("100 💸", {"roulette_bet": 100, "player": player}), KeyboardButtonColor.PRIMARY
+    ).add(
+        Text("250 💸", {"roulette_bet": 250, "player": player}), KeyboardButtonColor.PRIMARY
+    ).add(
+        Text("500 💸", {"roulette_bet": 500, "player": player}), KeyboardButtonColor.PRIMARY
+    ).add(
+        Text("1K 💸", {"roulette_bet": 1000, "player": player}), KeyboardButtonColor.PRIMARY
+    ).row().add(
+        Text("2.5K 💸", {"roulette_bet": 2500, "player": player}), KeyboardButtonColor.PRIMARY
+    ).add(
+        Text("5K 💸", {"roulette_bet": 5000, "player": player}), KeyboardButtonColor.PRIMARY
+    ).add(
+        Text("10K 💸", {"roulette_bet": 10000, "player": player}), KeyboardButtonColor.PRIMARY
+    ).add(
+        Text("25K 💸", {"roulette_bet": 25000, "player": player}), KeyboardButtonColor.PRIMARY
+    ).row().add(
+        Text("50K 💸", {"roulette_bet": 50000, "player": player}), KeyboardButtonColor.PRIMARY
+    ).add(
+        Text("100K 💸", {"roulette_bet": 100000, "player": player}), KeyboardButtonColor.PRIMARY
+    ).add(
+        Text("250K 💸", {"roulette_bet": 250000, "player": player}), KeyboardButtonColor.PRIMARY
+    ).add(
+        Text("500K 💸", {"roulette_bet": 500000, "player": player}), KeyboardButtonColor.PRIMARY
+    ).row().add(
+        Text("1M 💸", {"roulette_bet": 1000000, "player": player}), KeyboardButtonColor.PRIMARY
+    ).add(
+        Text("2.5M 💸", {"roulette_bet": 250000, "player": player}), KeyboardButtonColor.PRIMARY
+    ).add(
+        Text("5M 💸", {"roulette_bet": 5000000, "player": player}), KeyboardButtonColor.PRIMARY
+    ).add(
+        Text("10M 💸", {"roulette_bet": 10000000, "player": player}), KeyboardButtonColor.PRIMARY
+    ).row().add(
+        Text("Назад", {"main_menu": "roulette"}), KeyboardButtonColor.NEGATIVE
+    )
+    return bets

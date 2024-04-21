@@ -15,3 +15,5 @@ emoji
 aiohttp
 uvicorn
 aiofiles
+alembic
+psycopg2
