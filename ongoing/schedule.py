@@ -31,7 +31,7 @@ async def stats_notification():
 async def kombucha_reduce():
     await db.User.update.values(kombucha=db.User.kombucha - 0.05).where(
         and_(db.User.kombucha >= 100, db.User.kombucha < 500)).gino.status()
-    await db.User.update.values(kombucha=db.User.kombucha * 0.98).where(db.User.kombucha >= 500).gino.status()
+    await db.User.update.values(kombucha=db.User.kombucha * 0.99).where(db.User.kombucha >= 500).gino.status()
 
 
 @scheduler.add_task(Interval(minutes=10))
