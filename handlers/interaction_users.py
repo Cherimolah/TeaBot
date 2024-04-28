@@ -170,8 +170,8 @@ async def set_nickname_command(m: Message, nickname: str = None):
         await m.reply("🚫 В нике можно использовать до 30 символов")
         return
     if not is_vip_user and not re.match(r"^[а-яА-ЯёЁa-zA-Z0-9.,!№@#$%^:&?*-_()\s]+$", nickname):
-        await m.reply("🚫 В нике нельзя использовать запрещённые символы. Купите вип, чтобы "
-                              "снять ограничение на символы. Команда «купить вип»")
+        await m.reply("🚫 В нике можно использовать только определённые символы. Купите расширенный ник, чтобы "
+                              "снять ограничение на символы. Команда «купить ник+»")
         return
     await db.User.update.values(nickname=nickname).where(db.User.user_id == m.from_id).gino.status()
     await m.reply(f"✅ Ник успешно обновлён. теперь вы «{nickname}»")
@@ -189,7 +189,7 @@ async def delete_nickname_command(m: Message):
 @bot.on.chat_message(CommandWithAnyArgs("+приветствие "), ChangeSettingsChat())
 @bot.on.chat_message(CommandWithAnyArgs("+приветствие: "), ChangeSettingsChat())
 async def set_hello(m: Message):
-    hello_msg = m.text[17:]
+    hello_msg = " ".join(m.text.split()[1:])
     await db.Chat.update.values(hello_msg=hello_msg).where(db.Chat.chat_id == m.chat_id).gino.status()
     await m.reply("✅ Новое приветствие установлено!")
 

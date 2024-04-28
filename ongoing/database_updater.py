@@ -79,7 +79,7 @@ async def update_users_in_chats() -> NoReturn:
                             and_(db.UserToChat.user_id == user_id, db.UserToChat.chat_id == chat_id)
                         ).gino.scalar()
         except Exception as e:  # No need to catch Exceptions in this case
-            print(e)
+            pass
 
 
 async def load_punisments() -> NoReturn:

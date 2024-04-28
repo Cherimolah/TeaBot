@@ -96,7 +96,6 @@ async def buy_defend(m: Message):
 async def buy_sugar(m: Message, amount: int = None):
     from loader import qiwi
     bill = await qiwi.bill(amount=amount, lifetime=15, comment=f"{m.from_id}")
-    print(bill.pay_url)
     url = f"https://everybots.ru/qiwiredirect?invoice_uid={bill.pay_url[-36:]}"
     kb = Keyboard(inline=True).add(OpenLink(url, "Оплатить", {"bill_redirect": bill.bill_id}),
                                    KeyboardButtonColor.SECONDARY)
