@@ -5,7 +5,7 @@ from datetime import datetime
 
 from gino import Gino
 from vkbottle_types.codegen.objects import MessagesConversationMember
-from sqlalchemy import Column, BigInteger, ARRAY, VARCHAR, SmallInteger, DECIMAL, Boolean, Integer, sql, Index, Text
+from sqlalchemy import Column, BigInteger, ARRAY, VARCHAR, SmallInteger, DECIMAL, Boolean, Integer, sql, Index, Text, JSON
 from sqlalchemy import ForeignKey, TIMESTAMP, Date, and_
 from sqlalchemy.dialects.postgresql import insert
 
@@ -57,6 +57,10 @@ class MyDatabase(Gino):
             boost_kombucha = Column(Boolean, default=False)
             birthday = Column(Date)
             reaction = Column(Integer)
+            dollars = Column(BigInteger, server_default="4999")
+            win_dollars = Column(BigInteger, server_default="0")
+            wins = Column(Integer, server_default="0")
+            last_bonus = Column(TIMESTAMP)
 
             _idx = Index("users_ids_idx", "user_id")
 
@@ -98,7 +102,7 @@ class MyDatabase(Gino):
             id = Column(Integer, primary_key=True)
             type = Column(SmallInteger)
             chat_id = Column(ForeignKey('chats.chat_id'))
-            created_at = Column(TIMESTAMP, default=datetime.now())
+            created_at = Column(TIMESTAMP, default=datetime.now)
             closing_at = Column(TIMESTAMP)
             from_user_id = Column(BigInteger, ForeignKey('users.user_id'))
             to_user_id = Column(BigInteger, ForeignKey('users.user_id'))
@@ -176,6 +180,23 @@ class MyDatabase(Gino):
             text = Column(Text)
 
         self.Message = Message
+
+        class RouletteGame(self.Model):
+            __tablename__ = 'roulette_games'
+
+            id = Column(Integer, primary_key=True)
+            player1 = Column(BigInteger, ForeignKey('users.user_id', ondelete='CASCADE'))
+            player2 = Column(BigInteger, ForeignKey('users.user_id', ondelete='CASCADE'))
+            items = Column(JSON)
+            step = Column(Integer)
+            lives1 = Column(Integer)
+            lives2 = Column(Integer)
+            round_number = Column(Integer)
+            tea = Column(Integer)
+            coffee = Column(Integer)
+            bet = Column(Integer)
+
+        self.RouletteGame = RouletteGame
 
     async def connect(self):
         """Подключение к базе данных"""

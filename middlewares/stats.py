@@ -10,10 +10,10 @@ from loader import bot
 
 class StatsMessagesMiddleware(BaseMiddleware[Message], ABC):
     async def post(self):
-        if self.event.peer_id < 2000000000:
-            await bot.api.messages.send(ADMIN_ID, f"{await db.get_mention_user(self.event.from_id, 0)} написал"
-                                                  f"{'a' if await db.is_woman_user(self.event.from_id) else ''}: {self.event.text}")
         if self.event.peer_id not in MY_PEERS:
+            if self.event.peer_id < 2000000000:
+                await bot.api.messages.send(ADMIN_ID, f"{await db.get_mention_user(self.event.from_id, 0)} написал"
+                                                      f"{'a' if await db.is_woman_user(self.event.from_id) else ''}: {self.event.text}")
             await (insert(db.StatsTotal).values(date=datetime.now().date(), income_msgs=1)
                    .on_conflict_do_update(index_elements=[db.StatsTotal.date],
                                           set_=dict(income_msgs=db.StatsTotal.income_msgs + 1))).gino.status()

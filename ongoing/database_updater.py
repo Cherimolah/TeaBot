@@ -28,7 +28,8 @@ async def update_users() -> NoReturn:
                 "user_id": bindparam('user_id')
             })
             await db.all(stmt, udata)
-        except:  # No need to catch Exceptions in this case
+            await asyncio.sleep(0.1)
+        except Exception as e:  # No need to catch Exceptions in this case
             pass
 
 
@@ -78,6 +79,7 @@ async def update_users_in_chats() -> NoReturn:
                             admin=admin, joined_at=joined_at, invited_by=invited_by).where(
                             and_(db.UserToChat.user_id == user_id, db.UserToChat.chat_id == chat_id)
                         ).gino.scalar()
+                await asyncio.sleep(0.1)
         except Exception as e:  # No need to catch Exceptions in this case
             pass
 

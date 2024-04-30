@@ -2,7 +2,7 @@ from abc import ABC
 from typing import List, Union, Tuple, Dict
 import time
 
-from vkbottle.bot import Message
+from vkbottle.bot import Message, MessageEvent
 from vkbottle.dispatch.rules.base import ABCRule
 from sqlalchemy import and_
 from vkbottle_types.objects import MessagesMessageActionStatus
@@ -25,7 +25,7 @@ class InteractionUsers(ABCRule, ABC):
 
     async def check(self, m: Message):
         for prefix in PREFIXES:
-            string = " ".join(m.text.split(" ")[:self.offset+1]).lower()
+            string = " ".join(m.text.split(" ")[:self.offset + 1]).lower()
             if string == self.command or string == prefix + self.command:
                 to_user_id = await get_id_mention_from_message(m, self.check_chat, self.self_protect,
                                                                self.return_himself)
@@ -43,13 +43,13 @@ class ChangeSettingsChat(ABCRule, ABC):
             and_(db.UserToChat.user_id == m.from_id, db.UserToChat.chat_id == m.chat_id)).gino.first()
         if rang < 3 and admin < 1:
             await m.reply(f"❗ Менять настройки беседы могут только обладатели ранга {rangnames[3]} и выше или "
-                                  "администраторы")
+                          "администраторы")
             return False
         return True
 
 
 class AdminCommand(ABCRule, ABC):
-    def __init__(self, command: str, min_rang: int, need_time: bool = False, check_chat = False):
+    def __init__(self, command: str, min_rang: int, need_time: bool = False, check_chat=False):
         self.command = command
         self.min_rang = min_rang
         self.need_time = need_time
@@ -121,7 +121,7 @@ class CommandWithAnyArgs(ABCRule, ABC):
         for prefix in PREFIXES:
             if event.text.lower().startswith(prefix + self.command):
                 if self.need_values:
-                    values = " ".join(event.text.split(" ")[1+len(prefix.split(" "))-1:])
+                    values = " ".join(event.text.split(" ")[1 + len(prefix.split(" ")) - 1:])
                     return {self.name_args or "values": values}
                 return True
         return False
@@ -153,8 +153,10 @@ class UserInvited(ABCRule, ABC):
             if m.action.member_id and m.action.member_id > 0:
                 return {"users_invited": [m.action.member_id]}
             else:
-                user_ids_reg = {x[0] for x in await db.select([db.UserToChat.user_id]).where(db.UserToChat.chat_id == m.chat_id).gino.all()}
-                user_ids = {x.member_id for x in (await bot.api.messages.get_conversation_members(m.peer_id)).items if x.member_id > 0}
+                user_ids_reg = {x[0] for x in await db.select([db.UserToChat.user_id]).where(
+                    db.UserToChat.chat_id == m.chat_id).gino.all()}
+                user_ids = {x.member_id for x in (await bot.api.messages.get_conversation_members(m.peer_id)).items if
+                            x.member_id > 0}
                 users_not_found = list(user_ids - user_ids_reg)
                 return {"users_invited": users_not_found}
         return False
@@ -163,13 +165,13 @@ class UserInvited(ABCRule, ABC):
 class UserKicked(ABCRule, ABC):
     async def check(self, m: Message):
         return m.action is not None and m.action.type == MessagesMessageActionStatus.CHAT_KICK_USER and \
-               0 < m.action.member_id != m.from_id
+            0 < m.action.member_id != m.from_id
 
 
 class UserLeft(ABCRule, ABC):
     async def check(self, m: Message):
         return m.action is not None and m.action.type == MessagesMessageActionStatus.CHAT_KICK_USER and \
-               0 < int(m.action.member_id) == m.from_id
+            0 < int(m.action.member_id) == m.from_id
 
 
 class RPCommandRule(ABCRule, ABC):
@@ -194,3 +196,13 @@ class OwnerRPCommand(ABCRule, ABC):
             return {"owner": self.owner}
 
 
+class GameExists(ABCRule, ABC):
+    async def check(self, m: Message):
+        if m.payload and m.payload.get("game_id"):
+            game = await db.RouletteGame.get(m.payload["game_id"])
+            if game:
+                return {"game": game}
+            else:
+                await m.answer("Игры нет такой! Не ломай бота")
+                return False
+        return False

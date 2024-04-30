@@ -6,7 +6,7 @@ from vkbottle import Keyboard, KeyboardButtonColor, Callback, OpenLink, GroupEve
 
 from sqlalchemy import and_
 
-from loader import bot, evg
+from loader import bot, evg, qiwi
 from utils.custom_rules import Command, CommandWithAnyArgs, InteractionUsers
 from utils.parsing import parse_cooldown
 from utils.parsing_users import get_register_date
@@ -108,7 +108,6 @@ async def buy_sugar(m: Message, amount: int = None):
 async def confirm_buy_sugar(m: MessageEvent):
     if "bill_check" not in m.object.payload:
         return
-    from loader import qiwi
     bill_id: int = m.object.payload['bill_check']
     bill = await qiwi.check(bill_id)
     if bill.status != "PAID":

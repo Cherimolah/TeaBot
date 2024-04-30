@@ -23,7 +23,6 @@ from vkbottle.http.aiohttp import AiohttpClient
 from sqlalchemy.dialects.postgresql import insert
 from aiohttp import ClientSession, ClientResponse, TCPConnector
 
-from keyboards.private import main_kb
 from config import MY_PEERS
 from db_api.db_engine import db
 
@@ -69,8 +68,6 @@ class MessagesCategoryExtended(MessagesCategory):
         if isinstance(random_id, str):  # Compatible
             message = random_id
             random_id = 0
-        if not keyboard and len(peer_ids) == 1 and peer_ids[0] < 2_000_000_000:
-            keyboard = main_kb
         count = int(len(message) // 4096)
         msgs = []
         for number, i in enumerate(range(0, len(message), 4096)):
