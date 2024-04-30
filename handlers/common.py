@@ -234,7 +234,7 @@ async def screen_url(m: Message, url: str = None):
         await m.reply("🤷‍♂️ Нужно добавить ссылку. Пример: «скрин https://vk.com»")
         return
     await m.reply("🎥 Чайник достаёт свой фотоаппарат")
-    photo = await client.request_raw(f"https://mini.s-shot.ru/1920x1080/1024/png/?{url}")
+    photo = await client.request_content(f"https://mini.s-shot.ru/1920x1080/1024/png/?{url}")
     attachment = await bot_photo_message_upl.upload(photo)
     await m.reply("🔍 Держи скрин сайта\n\n", attachment=attachment)
 
