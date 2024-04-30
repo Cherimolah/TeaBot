@@ -37,14 +37,14 @@ async def check_end_game(game_id) -> bool:
             await bot.api.messages.send(
                 message=f"К сожалению вы проиграли в этой схватке.\nИтого: -{game.bet}💸\n", peer_id=game.player1, keyboard=Keyboard())
             if game.player2:
-                await db.User.update.values(dollars=db.User.dollars + int(game.bet) * 0.94,
+                await db.User.update.values(dollars=db.User.dollars + int(game.bet) * 0.94 + game.bet,
                                             win_dollars=db.User.win_dollars + int(game.bet) * 0.94,
                                             wins=db.User.wins + 1).where(
                     db.User.user_id == game.player2).gino.status()
                 await bot.api.messages.send(peer_id=game.player2,
                                             message=f"Поздравляем вы выиграли в этой схватке!\n\nИтого: +{int(game.bet * 0.94)}💸", keyboard=Keyboard())
         else:  # lives2 = 0
-            await db.User.update.values(dollars=db.User.dollars + int(game.bet) * 0.94,
+            await db.User.update.values(dollars=db.User.dollars + int(game.bet) * 0.94 + game.bet,
                                         win_dollars=db.User.win_dollars + int(game.bet) * 0.94,
                                         wins=db.User.wins + 1).where(
                 db.User.user_id == game.player1).gino.status()
