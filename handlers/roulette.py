@@ -49,7 +49,7 @@ async def check_end_game(game_id) -> bool:
                                         wins=db.User.wins + 1).where(
                 db.User.user_id == game.player1).gino.status()
             await bot.api.messages.send(
-                message=f"Поздравляем! Вы победили в этой схваткe!\nИтого: +{int(game.bet) * 0.94}💸", peer_id=game.player1, keyboard=Keyboard())
+                message=f"Поздравляем! Вы победили в этой схваткe!\nИтого: +{int(game.bet * 0.94)}💸", peer_id=game.player1, keyboard=Keyboard())
             if game.player2:
                 await bot.api.messages.send(message=f"К сожалению в проиграли в этой схватке.\nИтого: -{game.bet}💸\n", peer_id=game.player2, keyboard=Keyboard())
         await db.RouletteGame.delete.where(db.RouletteGame.id == game_id).gino.status()
