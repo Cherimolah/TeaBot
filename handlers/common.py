@@ -10,7 +10,7 @@ from vkbottle.bot import Message, MessageEvent
 from vkbottle import Keyboard, Callback, KeyboardButtonColor
 from vkbottle import GroupEventType
 from sqlalchemy import func
-from sqlalchemy.sql import and_
+from sqlalchemy.sql import and_, or_
 
 from utils.views import remember_kombucha, generate_text
 from loader import bot
@@ -29,6 +29,10 @@ screen_users = []
 @bot.on.private_message(Command(["меню", "главное меню", "начать", "старт", "start"]))
 @bot.on.private_message(PayloadRule({"command": "start"}))
 async def start(m: Message):
+    has_game = await db.select([db.RouletteGame.id]).where(
+        or_(db.RouletteGame.player1 == m.from_id, db.RouletteGame.player2 == m.from_id)).gino.first()
+    if has_game:
+        return "Ээ давай не тикай с катки"
     await m.reply("✋ Приветствую тебя! Здесь ты можешь склеить мем, получить эстетику или узнать предсказание",
                   keyboard=main_kb)
 
