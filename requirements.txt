@@ -17,3 +17,4 @@ uvicorn
 aiofiles
 alembic
 psycopg2
+setuptools
