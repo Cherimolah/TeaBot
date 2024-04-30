@@ -42,7 +42,7 @@ async def check_end_game(game_id) -> bool:
                                             wins=db.User.wins + 1).where(
                     db.User.user_id == game.player2).gino.status()
                 await bot.api.messages.send(peer_id=game.player2,
-                                            message=f"Поздравляем вы выиграли в этой схватке!\n\nИтого: +{int(game.bet) * 0.94}💸", keyboard=Keyboard())
+                                            message=f"Поздравляем вы выиграли в этой схватке!\n\nИтого: +{int(game.bet * 0.94)}💸", keyboard=Keyboard())
         else:  # lives2 = 0
             await db.User.update.values(dollars=db.User.dollars + int(game.bet) * 0.94,
                                         win_dollars=db.User.win_dollars + int(game.bet) * 0.94,
@@ -209,7 +209,7 @@ async def page_top_roulette(page: int) -> Tuple[str, Keyboard]:
     reply = f"Топ игроков рулетки по выигранным 💸:\n\nСтраница {page}/{pages}\n\n"
     for i, tup in enumerate(data):
         user_id, win_dollars = tup
-        reply += f"{i + 1}. {await db.get_mention_user(user_id, 0)} {win_dollars} 💸\n"
+        reply += f"{(page - 1) * 15 + i + 1}. {await db.get_mention_user(user_id, 0)} {win_dollars} 💸\n"
     keyboard = None
     if pages > 1:
         keyboard = Keyboard(inline=True)
