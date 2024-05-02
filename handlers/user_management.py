@@ -111,7 +111,7 @@ async def confirm_buy_sugar(m: MessageEvent):
     bill_id: int = m.object.payload['bill_check']
     bill = await qiwi.check(bill_id)
     if bill.status != "PAID":
-        await bot.send_ans(m, "Счёт не оплачен")
+        await m.show_snackbar("Счёт не оплачен")
         return
     await db.User.update.values(balance=db.User.balance+int(float(bill.amount))).where(
         db.User.user_id == int(bill.comment)).gino.status()

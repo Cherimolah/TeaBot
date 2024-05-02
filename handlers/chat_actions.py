@@ -50,10 +50,10 @@ async def kick_user_button(m: MessageEvent):
         and_(db.UserToChat.user_id == m.user_id, db.UserToChat.chat_id == m.peer_id - 2000000000)
     ).gino.first()
     if rang < 3 or admin < 1:
-        await bot.send_ans(m, f"⛔ Исключать пользователей можно с ранга {rangnames[3]}")
+        await m.show_snackbar(f"⛔ Исключать пользователей можно с ранга {rangnames[3]}")
         return
     if not await db.is_higher(m.peer_id-2000000000, m.user_id, user_id):
-        await bot.send_ans(m, "🙅‍♂ Пользователь выше или одинакового с вами ранга")
+        await m.show_snackbar("🙅‍♂ Пользователь выше или одинакового с вами ранга")
         return
     try:
         await bot.api.messages.remove_chat_user(m.peer_id-2000000000, member_id=user_id)
