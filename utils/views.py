@@ -1,12 +1,14 @@
 from typing import List, Union
 import time
 import asyncio
+import random
 
 from db_api.db_engine import db, Punishments
 from datetime import datetime
 from utils.parsing import parse_unix_to_date
 from vkbottle import VKAPIError
-from loader import bot
+from vkbottle.bot import Message
+from loader import bot, captcha_users
 from sqlalchemy import and_
 from vkbottle_types.responses.users import UsersUserFull
 from utils.parsing_users import get_register_date
@@ -61,6 +63,23 @@ async def send_goodbye(chat_id: int, user_id: int):
            .where(and_(db.UserToChat.chat_id == chat_id, db.UserToChat.user_id == user_id))).gino.status()
     await bot.api.messages.send(chat_id + 2000000000, f"😢 Прощай, мы тебя никогда не забудем, "
                                              f"{await db.get_mention_user(user_id, 0)}")
+
+
+async def wait_captcha_user(message: Message, user_id: int, time_sleep: int):
+    await asyncio.sleep(time_sleep)
+    await bot.api.messages.delete(peer_id=message.peer_id, cmids=[message.conversation_message_id],
+                                  delete_for_all=True)
+    if user_id in captcha_users:
+        await bot.api.messages.remove_chat_user(user_id=user_id, chat_id=message.peer_id - 2000000000)
+        del captcha_users[user_id]
+    else:
+        hello_msg = await db.select([db.Chat.hello_msg]).where(db.Chat.chat_id == message.peer_id - 2000000000).gino.scalar()
+        if hello_msg is None:
+            await bot.api.messages.send(message.peer_id,
+                                        f"✋ Приветсвую тебя, чаеман "
+                                        f"{await db.get_mention_user(user_id, 0)}")
+        else:
+            await bot.api.messages.send(message.peer_id, hello_msg)
 
 
 async def send_hello(chat_id: int, user_id: int, invited_by: int, send_message=True):
@@ -119,16 +138,29 @@ async def send_hello(chat_id: int, user_id: int, invited_by: int, send_message=T
     if not await db.select([db.UserToChat.user_id]).where(
             and_(db.UserToChat.user_id == user_id, db.UserToChat.chat_id == chat_id)).gino.scalar():
         await db.UserToChat.create(user_id=user_id, invited_by=invited_by, chat_id=chat_id, joined_at=datetime.now())
+        is_group = await db.select([db.Chat.is_group]).where(db.Chat.chat_id == chat_id).gino.scalar()
+        if is_group:
+            a = random.randint(1, 9)
+            b = random.randint(1, 9)
+            answer = a + b
+            captcha_users[user_id] = answer
+            message = (await bot.api.messages.send(peer_id=2000000000 + chat_id,
+                                                   message=f"Привет, {await db.get_mention_user(user_id, 0)}\n\n"
+                                                           f"Докажи, что ты не бот, реши пример: {a} + {b}\n\n"
+                                                           f"На решение даётся 20 секунд!"))[0]
+            asyncio.get_event_loop().create_task(
+                wait_captcha_user(message, user_id, 20)
+            )
+            return
     else:
         await db.UserToChat.update.values(in_chat=True).where(and_(db.UserToChat.user_id == user_id,
                                                                    db.UserToChat.chat_id == chat_id)).gino.status()
     if send_message:
         hello_msg = await db.select([db.Chat.hello_msg]).where(db.Chat.chat_id == chat_id).gino.scalar()
-        user = await bot.api.users.get(user_ids=user_id)
         if hello_msg is None:
             await bot.api.messages.send(chat_id + 2000000000,
                                f"✋ Приветсвую тебя, чаеман "
-                               f"[id{user_id}|{user[0].first_name} {user[0].last_name}]")
+                               f"{await db.get_mention_user(user_id, 0)}")
         else:
             await bot.api.messages.send(chat_id + 2000000000, hello_msg)
 

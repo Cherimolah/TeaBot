@@ -85,8 +85,8 @@ class MyDatabase(Gino):
             __tablename__ = 'users_to_chats'
             query: sql.Select
 
-            user_id = Column(BigInteger, ForeignKey('users.user_id'))
-            chat_id = Column(Integer, ForeignKey('chats.chat_id'))
+            user_id = Column(BigInteger, ForeignKey('users.user_id', ondelete='CASCADE'))
+            chat_id = Column(Integer, ForeignKey('chats.chat_id', ondelete='CASCADE'))
             admin = Column(SmallInteger, default=0)
             rang = Column(SmallInteger, default=0)
             invited_by = Column(BigInteger)
@@ -104,8 +104,8 @@ class MyDatabase(Gino):
             chat_id = Column(ForeignKey('chats.chat_id'))
             created_at = Column(TIMESTAMP, default=datetime.now)
             closing_at = Column(TIMESTAMP)
-            from_user_id = Column(BigInteger, ForeignKey('users.user_id'))
-            to_user_id = Column(BigInteger, ForeignKey('users.user_id'))
+            from_user_id = Column(BigInteger, ForeignKey('users.user_id', ondelete='CASCADE'))
+            to_user_id = Column(BigInteger, ForeignKey('users.user_id', ondelete='CASCADE'))
 
         self.Punishment = Punishment
 
