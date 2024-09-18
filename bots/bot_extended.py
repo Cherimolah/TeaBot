@@ -131,6 +131,21 @@ class MessagesCategoryExtended(MessagesCategory):
                 keyboard=keyboard, **kwargs
             )
 
+    async def delete(
+        self,
+        message_ids: typing.Optional[typing.List[int]] = None,
+        spam: typing.Optional[bool] = None,
+        group_id: typing.Optional[int] = None,
+        delete_for_all: typing.Optional[bool] = None,
+        peer_id: typing.Optional[int] = None,
+        cmids: typing.Optional[typing.List[int]] = None,
+        **kwargs
+    ) -> typing.Dict[str, int]:
+        try:
+            return await super().delete(message_ids, spam, group_id, delete_for_all, peer_id, cmids, **kwargs)
+        except:
+            pass
+
 
 class UsersCategoryExtended(UsersCategory, ABC):
 

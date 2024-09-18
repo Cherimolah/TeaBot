@@ -1,5 +1,6 @@
 import sys
 import loguru
+from typing import Dict
 
 from vkbottle.user import User
 from vkbottle.bot import Bot
@@ -24,6 +25,8 @@ loguru.logger.remove()
 loguru.logger.add(sys.stdout, level="INFO")
 
 app = FastAPI()
+
+captcha_users: Dict[int, int] = {}
 
 
 @app.post('/tea_bot')
