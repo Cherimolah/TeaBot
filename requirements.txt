@@ -1,4 +1,4 @@
-vkbottle==4.3.12
+vkbottle
 fastapi[all]
 gino
 sqlalchemy
