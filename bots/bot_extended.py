@@ -11,13 +11,11 @@ from vkbottle_types.methods import messages
 from vkbottle.api.api import API, ABCAPI
 from vkbottle_types.responses.messages import MessagesSendUserIdsResponseItem
 from vkbottle_types.responses.users import UsersUserFull
-from vkbottle_types.responses.base import BaseBoolInt
 from vkbottle import VKAPIError, Keyboard
 from vkbottle.dispatch.views.bot import RawBotEventView, BotHandlerBasement, ABCBotMessageView, BotMessageView
-from vkbottle_types.events import BaseGroupEvent
-from vkbottle.tools.dev.mini_types.bot.message_event import MessageEventMin
-from vkbottle.tools.dev.mini_types.bot import MessageMin
-from vkbottle.tools.dev.mini_types.bot import message_min
+from vkbottle.tools.mini_types.bot.message_event import MessageEventMin
+from vkbottle.tools.mini_types.bot import MessageMin
+from vkbottle.tools.mini_types.bot import message_min
 from vkbottle.http.aiohttp import AiohttpClient
 
 from sqlalchemy.dialects.postgresql import insert
@@ -114,7 +112,7 @@ class MessagesCategoryExtended(MessagesCategory):
             template: typing.Optional[str] = None,
             keyboard: typing.Optional[str] = None,
             **kwargs
-    ) -> BaseBoolInt:
+    ) -> bool:
         try:
             response = await super().edit(peer_id, message, lat, long, attachment, keep_forward_messages,
                                       keep_snippets, group_id, dont_parse_links, disable_mentions,
