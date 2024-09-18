@@ -1,10 +1,12 @@
 from datetime import datetime, timedelta, date
 from loader import bot, evg
 from db_api.db_engine import db
-from config import ADMIN_ID, GROUP_ID
+from config import ADMIN_ID, GROUP_ID, USER_TOKEN
 import asyncio
 from utils.scheduler import AsyncIOScheduler, Interval, Cron
 from sqlalchemy import and_
+
+from aiohttp import ClientSession
 
 scheduler = AsyncIOScheduler()
 today = datetime.now()
@@ -42,13 +44,17 @@ async def set_online():
         pass
 
 
-@scheduler.add_task(Interval(seconds=5), next_run_time=next_minute)
+@scheduler.add_task(Interval(hours=1), next_run_time=next_minute)
 async def update_stickers():
     last_id = await db.select([db.Sticker.id]).order_by(db.Sticker.id.desc()).limit(1).gino.scalar()
     if not last_id:
         last_id = 0
-    st_info = await evg.api.request("store.getStockItems", {"type": "stickers",
-                                                            "product_ids": list(range(last_id + 1, last_id + 150))})
+    # Работает только с версией 5.134 поэтому сырым запросом
+    async with ClientSession() as session:
+        response = await session.get("https://api.vk.com/method/store.getStockItems",
+                                     params={'type': 'stickers', 'product_ids': ','.join(map(str, list(range(last_id + 1, last_id + 150)))),
+                                             'access_token': USER_TOKEN, 'v': '5.134'})
+        st_info = await response.json(encoding='utf-8')
     packs = st_info['response']['items']
     for pack in packs:
         if not pack:
