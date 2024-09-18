@@ -11,10 +11,8 @@ class MyPhotoMessageUploader(PhotoMessageUploader):
     def __init__(self,
                  api=None,
                  api_getter=None,
-                 generate_attachment_strings: bool = True,
-                 with_name: Optional[str] = None,
                  ):
-        super().__init__(api, api_getter, generate_attachment_strings, with_name)
+        super().__init__(api, api_getter)
 
     async def upload(self, file_source, **params) -> Union[str, List[dict]]:
         while True:
@@ -24,5 +22,5 @@ class MyPhotoMessageUploader(PhotoMessageUploader):
                 await asyncio.sleep(0.2)
 
 
-bot_photo_message_upl = MyPhotoMessageUploader(bot.api)
-bot_doc_message_upl = DocMessagesUploader(bot.api)
+bot_photo_message_upl = MyPhotoMessageUploader(api=bot.api)
+bot_doc_message_upl = DocMessagesUploader(api=bot.api)
