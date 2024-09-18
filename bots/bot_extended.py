@@ -160,7 +160,7 @@ class UsersCategoryExtended(UsersCategory, ABC):
             responses = [await super(UsersCategoryExtended, self).get(user_ids[i:i + 1000], fields, name_case, **kwargs)
                          for i in range(0, len(user_ids), 1000)]
             return [y for x in responses for y in x]
-        return await super(UsersCategoryExtended, self).get(user_ids, fields, name_case, **kwargs)
+        return await super(UsersCategoryExtended, self).get(user_ids=user_ids, fields=fields, name_case=name_case, **kwargs)
 
 
 class APICategoriesExtended(APICategories, ABC):

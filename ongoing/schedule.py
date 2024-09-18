@@ -49,12 +49,9 @@ async def update_stickers():
     last_id = await db.select([db.Sticker.id]).order_by(db.Sticker.id.desc()).limit(1).gino.scalar()
     if not last_id:
         last_id = 0
-    # Работает только с версией 5.134 поэтому сырым запросом
-    async with ClientSession() as session:
-        response = await session.get("https://api.vk.com/method/store.getStockItems",
-                                     params={'type': 'stickers', 'product_ids': ','.join(map(str, list(range(last_id + 1, last_id + 150)))),
-                                             'access_token': USER_TOKEN, 'v': '5.134'})
-        st_info = await response.json(encoding='utf-8')
+    st_info = await evg.api.request('store.getStockItems',
+                                    {'type': 'stickers', 'product_ids': ','.join(map(str, list(range(last_id + 1, last_id + 150))))})
+    print(st_info)
     packs = st_info['response']['items']
     for pack in packs:
         if not pack:
