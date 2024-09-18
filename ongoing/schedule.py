@@ -51,7 +51,6 @@ async def update_stickers():
         last_id = 0
     st_info = await evg.api.request('store.getStockItems',
                                     {'type': 'stickers', 'product_ids': ','.join(map(str, list(range(last_id + 1, last_id + 150))))})
-    print(st_info)
     packs = st_info['response']['items']
     for pack in packs:
         if not pack:
