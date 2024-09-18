@@ -16,5 +16,5 @@ aiohttp
 uvicorn
 aiofiles
 alembic
-psycopg2
+psycopg2-binary
 setuptools
