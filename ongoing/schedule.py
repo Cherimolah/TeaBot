@@ -1,12 +1,10 @@
 from datetime import datetime, timedelta, date
 from loader import bot, evg
 from db_api.db_engine import db
-from config import ADMIN_ID, GROUP_ID, USER_TOKEN
+from config import ADMIN_ID, GROUP_ID
 import asyncio
 from utils.scheduler import AsyncIOScheduler, Interval, Cron
 from sqlalchemy import and_
-
-from aiohttp import ClientSession
 
 scheduler = AsyncIOScheduler()
 today = datetime.now()

@@ -18,6 +18,7 @@ bot = Bot(api=APIExtended(BOT_TOKEN, http_client=client),
           labeler=BotLabeler(raw_event_view=RawBotEventViewExtended(),
                              message_view=BotMessageViewExtended()))
 evg = User(api=APIExtended(USER_TOKEN, http_client=AioHTTPClientExtended()))
+evg.api.API_VERSION = '5.134'
 
 qiwi = AioQiwiP2P(QIWI_TOKEN)
 
