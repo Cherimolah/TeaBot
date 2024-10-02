@@ -45,7 +45,7 @@ class RegistrationMiddleware(BaseMiddleware[Message], ABC):
                 await m.reply("🔒 Выдайте мне права администратора, чтобы пользоваться мной")
                 await db.Chat.delete.where(db.Chat.chat_id == self.event.chat_id).gino.status()
                 self.stop()
-            except Exception as e:
+            except Exception:
                 await db.Chat.delete.where(db.Chat.chat_id == self.event.chat_id).gino.status()
                 self.stop()
         if self.event.from_id > 0 and not await db.User.get(self.event.from_id):

@@ -157,7 +157,7 @@ class UsersCategoryExtended(UsersCategory, ABC):
             **kwargs
     ) -> typing.List[UsersUserFull]:
         if isinstance(user_ids, list):
-            responses = [await super(UsersCategoryExtended, self).get(user_ids[i:i + 1000], fields, name_case, **kwargs)
+            responses = [await super(UsersCategoryExtended, self).get(user_ids=user_ids[i:i + 1000], fields=fields, name_case=name_case, **kwargs)
                          for i in range(0, len(user_ids), 1000)]
             return [y for x in responses for y in x]
         return await super(UsersCategoryExtended, self).get(user_ids=user_ids, fields=fields, name_case=name_case, **kwargs)
