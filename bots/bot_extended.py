@@ -1,7 +1,7 @@
 import enum
 import json
 import typing
-from typing import Optional, Union
+from typing import Optional, Union, List
 from abc import ABC
 from datetime import datetime
 
@@ -254,7 +254,7 @@ class MessagesMessageAttachmentExtended(MessagesMessageAttachment):
 
 
 class MessagesMessageExtended(MessagesMessage):
-    attachments: Optional["MessagesMessageAttachmentExtended"] = None
+    attachments: Optional[List["MessagesMessageAttachmentExtended"]] = None
 
 
 class MessageNewObjectExtended(MessageNewObject):
