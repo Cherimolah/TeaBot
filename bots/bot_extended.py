@@ -4,6 +4,7 @@ import typing
 from typing import Optional, Union, List
 from abc import ABC
 from datetime import datetime
+import inspect
 
 from vkbottle_types.methods.messages import MessagesCategory
 from vkbottle_types.methods.users import UsersCategory
@@ -19,14 +20,13 @@ from vkbottle.tools.mini_types.bot import MessageMin
 from vkbottle.tools.mini_types.base.message import BaseMessageMin
 from vkbottle.http.aiohttp import AiohttpClient
 from vkbottle_types.codegen.objects import VideoVideo, VideoVideoFull
-from vkbottle_types.objects import MessagesMessageAttachment, MessagesMessage
+from vkbottle_types.objects import MessagesMessageAttachment, MessagesMessage, MessagesForeignMessage
 from vkbottle_types.events.objects.group_event_objects import MessageNewObject
 from vkbottle_types.events.bot_events import MessageNew
 
-
 from sqlalchemy.dialects.postgresql import insert
 from aiohttp import ClientSession, ClientResponse, TCPConnector
-from pydantic import Field
+from pydantic import Field, BaseModel
 
 from config import MY_PEERS
 from db_api.db_engine import db
@@ -253,8 +253,16 @@ class MessagesMessageAttachmentExtended(MessagesMessageAttachment):
     video: Optional["VideoVideoFullExtended"] = None
 
 
+class MessagesForeignMessageExtended(MessagesForeignMessage):
+    attachments: Optional[List["MessagesMessageAttachmentExtended"]] = None
+    reply_message: Optional["MessagesForeignMessageExtended"] = None
+    fwd_messages: Optional[List["MessagesForeignMessageExtended"]] = None
+
+
 class MessagesMessageExtended(MessagesMessage):
     attachments: Optional[List["MessagesMessageAttachmentExtended"]] = None
+    reply_message: Optional["MessagesForeignMessageExtended"] = None
+    fwd_messages: Optional[List["MessagesForeignMessageExtended"]] = None
 
 
 class MessageNewObjectExtended(MessageNewObject):
@@ -271,6 +279,9 @@ class BaseMessageMinExtended(MessagesMessageExtended, BaseMessageMin):
 
 class MessageMinExtended(BaseMessageMinExtended, MessageMin):
     pass
+
+
+MessagesForeignMessageExtended.update_forward_refs()
 
 
 def message_min(event: dict, ctx_api: "ABCAPI", replace_mention: bool = True) -> "MessageMin":
