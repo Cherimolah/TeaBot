@@ -68,6 +68,8 @@ async def mute_command(m: Message, to_user_id: int = None, to_time: int = None):
                            f" до {parse_unix_to_date(mute_time)}")
         return
     await db.add_punishment(Punishments.MUTE, to_time, m.chat_id, m.from_id, to_user_id)
+    await bot.api.request('messages.changeConversationMemberRestrictions',
+                          {'peer_id': m.peer_id, 'member_ids': to_user_id, 'action': 'ro'})
     await m.reply(f"🤐 {await db.get_mention_user(m.from_id, 0)} выдал мут "
                           f"{await db.get_mention_user(to_user_id, 2)} до {parse_unix_to_date(to_time)}")
 
@@ -85,6 +87,8 @@ async def clear_mute_command(m: Message, to_user_id: int):
     to_user_id, to_user_name, to_user_nickname, ban_id = res
     await db.Punishment.delete.where(and_(db.Punishment.type == 1, db.Punishment.chat_id == m.chat_id,
                                           db.Punishment.to_user_id == to_user_id)).gino.status()
+    await bot.api.request('messages.changeConversationMemberRestrictions',
+                          {'peer_id': m.peer_id, 'member_ids': to_user_id, 'action': 'rw'})
     await m.reply(f"✅ {await db.get_mention_user(m.from_id, 0)} снял{'а' if await db.is_woman_user(to_user_id) else ''} мут с "
            f"[id{to_user_id}|{to_user_name if to_user_nickname is None else to_user_nickname}]")
 

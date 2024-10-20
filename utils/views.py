@@ -189,6 +189,9 @@ async def waiting_punishment(punishment_id: int, to_time: Union[int, datetime]):
             .where(db.Punishment.id == punishment_id)).gino.first()
         if await bot.api.messages.is_messages_from_group_allowed(GROUP_ID, to_user_id):
             await db.Punishment.delete.where(db.Punishment.id == pun_id).gino.status()
+            if pun_type == Punishments.MUTE.value:
+                await bot.api.request('messages.changeConversationMemberRestrictions',
+                                      {'peer_id': chat_id + 2000000000, 'member_ids': to_user_id, 'action': 'rw'})
             await bot.api.messages.send(to_user_id,
                                f"🎉🎊 {await db.get_mention_user(to_user_id, 0)}, у вас закончился срок "
                                f"{'бана' if pun_type == 3 else 'варна' if pun_type == 2 else 'мута'}, выданного "
