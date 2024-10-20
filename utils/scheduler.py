@@ -18,7 +18,7 @@ class Cron(BaseTypeScheduler, ABC):
         self.second = second
 
     def count_delta(self) -> int:
-        now = datetime.datetime.now()
+        now = datetime.datetime.now(tz=datetime.timezone(datetime.timedelta(hours=3)))
         date = datetime.datetime(now.year, now.month, now.day, self.hour, self.minute, self.second)
         if now > date:
             date = date + datetime.timedelta(days=1)
