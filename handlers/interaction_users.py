@@ -121,6 +121,9 @@ async def admins_command(m: Message):
         reply += f"Создатель беседы:\n[id{owner_id}|{owner_name if owner_nickname is None else owner_nickname}] " \
                  f"{'🍵' if owner_online else '☕'}" \
                  f"{'🚪' if not in_chat else ''}\n\n"
+    if not users and not owner:
+        await m.reply('😨 Капец у вас беседа ни админов, ни создателя!')
+        return
     if len(users) == 0:
         await m.reply(reply)
         return
