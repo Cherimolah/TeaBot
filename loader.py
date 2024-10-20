@@ -23,7 +23,7 @@ evg.api.API_VERSION = '5.134'
 qiwi = AioQiwiP2P(QIWI_TOKEN)
 
 loguru.logger.remove()
-loguru.logger.add(sys.stdout, level="INFO")
+loguru.logger.add(sys.stdout, level="DEBUG")
 
 app = FastAPI()
 

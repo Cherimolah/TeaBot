@@ -145,10 +145,8 @@ class MessagesCategoryExtended(MessagesCategory):
         cmids: typing.Optional[typing.List[int]] = None,
         **kwargs
     ) -> typing.Dict[str, int]:
-        try:
-            return await super().delete(message_ids, spam, group_id, delete_for_all, peer_id, cmids, **kwargs)
-        except:
-            pass
+        return await super().delete(message_ids=message_ids, spam=spam, group_id=group_id,
+                                    delete_for_all=delete_for_all, peer_id=peer_id, cmids=cmids, **kwargs)
 
 
 class UsersCategoryExtended(UsersCategory, ABC):

@@ -18,11 +18,12 @@ class CaptchaUsers(BaseMiddleware[Message], ABC):
 
     async def pre(self) -> None:
         m: Message = self.event
-        if m.peer_id > 2000000000:
+        chat_registered = await db.select([db.Chat.chat_id]).where(db.Chat.chat_id == m.chat_id).gino.scalar()
+        if m.peer_id > 2000000000 and chat_registered:
             registered = await db.select([db.UserToChat.user_id]).where(
                 and_(db.UserToChat.user_id == m.from_id, db.UserToChat.chat_id == m.chat_id)
             ).gino.scalar()
-            if m.from_id not in captcha_users and not registered:
+            if m.from_id not in captcha_users and not registered and m.from_id > 0:
                 await bot.api.messages.delete(peer_id=m.peer_id, cmids=[m.conversation_message_id], delete_for_all=True)
                 self.stop()
             elif m.from_id in captcha_users:
