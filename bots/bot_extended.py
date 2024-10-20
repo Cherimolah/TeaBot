@@ -4,7 +4,6 @@ import typing
 from typing import Optional, Union, List
 from abc import ABC
 from datetime import datetime
-import inspect
 
 from vkbottle_types.methods.messages import MessagesCategory
 from vkbottle_types.methods.users import UsersCategory
@@ -19,14 +18,14 @@ from vkbottle.tools.mini_types.bot.message_event import MessageEventMin
 from vkbottle.tools.mini_types.bot import MessageMin
 from vkbottle.tools.mini_types.base.message import BaseMessageMin
 from vkbottle.http.aiohttp import AiohttpClient
-from vkbottle_types.codegen.objects import VideoVideo, VideoVideoFull
+from vkbottle_types.codegen.objects import VideoVideo, VideoVideoFull, PollsPoll
 from vkbottle_types.objects import MessagesMessageAttachment, MessagesMessage, MessagesForeignMessage
 from vkbottle_types.events.objects.group_event_objects import MessageNewObject
-from vkbottle_types.events.bot_events import MessageNew
+from vkbottle_types.events.bot_events import MessageNew, BaseGroupEvent
 
 from sqlalchemy.dialects.postgresql import insert
 from aiohttp import ClientSession, ClientResponse, TCPConnector
-from pydantic import Field, BaseModel
+from pydantic import Field
 
 from config import MY_PEERS
 from db_api.db_engine import db
@@ -249,8 +248,15 @@ class VideoVideoFullExtended(VideoVideoExtended, VideoVideoFull):
     pass
 
 
+class PollsPollExtended(PollsPoll):
+    anonymous: bool = Field(
+        default=None,
+    )
+
+
 class MessagesMessageAttachmentExtended(MessagesMessageAttachment):
     video: Optional["VideoVideoFullExtended"] = None
+    poll: Optional["PollsPollExtended"] = None
 
 
 class MessagesForeignMessageExtended(MessagesForeignMessage):
