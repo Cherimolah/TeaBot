@@ -102,8 +102,8 @@ async def admins_command(m: Message):
     is_group = await db.select([db.Chat.is_group]).where(db.Chat.chat_id == m.chat_id).gino.scalar()
     if is_group:
         members = await bot.api.messages.get_conversation_members(peer_id=m.peer_id)
-        group = await bot.api.groups.get_by_id(group_ids=members.items[0].member_id)
-        reply += f"Создатель беседы:\n[club{abs(group[0].id)}|{group[0].name}]\n\n"
+        group = (await bot.api.groups.get_by_id(group_ids=members.items[0].member_id)).groups[0]
+        reply += f"Создатель беседы:\n[club{abs(group.id)}|{group.name}]\n\n"
     admins = await (db.select([db.User.user_id, db.User.names[1], db.User.nickname, db.UserToChat.admin,
                               db.UserToChat.in_chat])
                     .select_from(db.User.join(db.UserToChat, db.UserToChat.user_id == db.User.user_id))
