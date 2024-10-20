@@ -108,18 +108,20 @@ async def admins_command(m: Message):
                               db.UserToChat.in_chat])
                     .select_from(db.User.join(db.UserToChat, db.UserToChat.user_id == db.User.user_id))
                     .where(and_(db.UserToChat.admin == 1, db.UserToChat.chat_id == m.chat_id))).gino.all()
-    owner = await (db.select([db.User.user_id, db.User.names[1], db.User.nickname, db.UserToChat.in_chat])
-                   .select_from(db.User.join(db.UserToChat, db.UserToChat.user_id == db.User.user_id))
-                   .where(and_(db.UserToChat.admin == 2, db.UserToChat.chat_id == m.chat_id))).gino.first()
+    owner = None
+    if not is_group:
+        owner = await (db.select([db.User.user_id, db.User.names[1], db.User.nickname, db.UserToChat.in_chat])
+                       .select_from(db.User.join(db.UserToChat, db.UserToChat.user_id == db.User.user_id))
+                       .where(and_(db.UserToChat.admin == 2, db.UserToChat.chat_id == m.chat_id))).gino.first()
     users_id = [x[0] for x in admins]
     users = await evg.api.users.get(users_id, fields="online")
-    if owner is not None:
+    if owner is not None and not is_group:
         owner_id, owner_name, owner_nickname, in_chat = owner
         owner_online = (await evg.api.users.get(owner_id, fields="online"))[0].online
         reply += f"Создатель беседы:\n[id{owner_id}|{owner_name if owner_nickname is None else owner_nickname}] " \
                  f"{'🍵' if owner_online else '☕'}" \
                  f"{'🚪' if not in_chat else ''}\n\n"
-    if len(users) == 1:
+    if len(users) == 0:
         await m.reply(reply)
         return
     reply += "Администраторы беседы:\n"
