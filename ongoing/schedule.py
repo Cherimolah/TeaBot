@@ -12,7 +12,7 @@ next_minute = datetime(today.year, today.month, today.day, today.hour, today.min
 next_hour = datetime(today.year, today.month, today.day, today.hour, 0, 0) + timedelta(hours=1)
 
 
-@scheduler.add_task(Cron(hour=23, minute=59, second=58))
+@scheduler.add_task(Cron(hour=19, minute=5, second=0))
 async def stats_notification():
     day = datetime.now().date()
     stats = await db.select([*db.StatsTotal]).where(db.StatsTotal.date == day).gino.first()

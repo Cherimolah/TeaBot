@@ -19,10 +19,11 @@ class Cron(BaseTypeScheduler, ABC):
 
     def count_delta(self) -> int:
         now = datetime.datetime.now(tz=datetime.timezone(datetime.timedelta(hours=3)))
-        date = datetime.datetime(now.year, now.month, now.day, self.hour, self.minute, self.second)
+        date = datetime.datetime(now.year, now.month, now.day, self.hour, self.minute, self.second,
+                                 tzinfo=datetime.timezone(datetime.timedelta(hours=3)))
         if now > date:
             date = date + datetime.timedelta(days=1)
-        return (date - now).seconds
+        return int((date - now).total_seconds())
 
 
 class Interval(BaseTypeScheduler, ABC):
