@@ -49,17 +49,21 @@ class ChangeSettingsChat(ABCRule, ABC):
 
 
 class AdminCommand(ABCRule, ABC):
-    def __init__(self, command: str, min_rang: int, need_time: bool = False, check_chat=False):
+    def __init__(self, command: str, min_rang: int, need_time: bool = False, check_chat=False, for_all=False):
         self.command = command
         self.min_rang = min_rang
         self.need_time = need_time
         self.check_chat = check_chat
+        self.for_all = for_all
 
     async def check(self, m: Message):
         for prefix in PREFIXES:
             if m.text.split(" ")[0].lower() == self.command or m.text.split(" ")[0].lower() == prefix + self.command:
-                to_user_id = await get_id_mention_from_message(m, check_chat=False)
-                if not to_user_id:
+                if not self.for_all:
+                    to_user_id = await get_id_mention_from_message(m, check_chat=False)
+                else:
+                    to_user_id = None
+                if not to_user_id and not self.for_all:
                     return False
                 if m.from_id < 0:
                     is_group_chat = await db.Chat.select('is_group').where(db.Chat.chat_id == m.from_id).gino.scalar()
@@ -72,6 +76,8 @@ class AdminCommand(ABCRule, ABC):
                 if from_user_rang < self.min_rang and from_user_admin < 1:
                     await m.reply(f"🙅‍♂ Команда доступна только с ранга {rangnames[self.min_rang]}")
                     return False
+                if self.for_all:
+                    return True
                 can_increase = await db.is_higher(m.chat_id, m.from_id, to_user_id)
                 if not can_increase:
                     await m.reply("🙅‍♂ Пользователь выше или одинакового с вами ранга")
