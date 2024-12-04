@@ -4,7 +4,7 @@ from db_api.db_engine import db
 from config import ADMIN_ID, GROUP_ID
 import asyncio
 from utils.scheduler import AsyncIOScheduler, Interval, Cron
-from sqlalchemy import and_
+from sqlalchemy import and_, or_
 
 scheduler = AsyncIOScheduler()
 today = datetime.now()
@@ -84,3 +84,9 @@ async def congratulation_birthday():
             if not chat_ids:
                 await bot.api.messages.send(user_id, reply, attachment="photo-201071106_457240771_7de9eaa806e40d06be",
                                             disable_mentions=False)
+
+
+@scheduler.add_task(Interval(hours=1))
+async def clear_old_events():
+    yesterday = datetime.now() - timedelta(days=1)
+    await db.Event.delete.where(or_(db.Event.created_at < yesterday, db.Event.created_at.is_(None))).gino.status()

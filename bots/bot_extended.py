@@ -1,9 +1,10 @@
 import enum
 import json
 import typing
-from typing import Optional, Union, List
+from typing import Optional, Union, List, AsyncGenerator
 from abc import ABC
 from datetime import datetime
+import asyncio
 
 from vkbottle_types.methods.messages import MessagesCategory
 from vkbottle_types.methods.users import UsersCategory
@@ -22,10 +23,12 @@ from vkbottle_types.codegen.objects import VideoVideo, VideoVideoFull, PollsPoll
 from vkbottle_types.objects import MessagesMessageAttachment, MessagesMessage, MessagesForeignMessage
 from vkbottle_types.events.objects.group_event_objects import MessageNewObject
 from vkbottle_types.events.bot_events import MessageNew, BaseGroupEvent
+from vkbottle.polling.bot_polling import BotPolling
 
 from sqlalchemy.dialects.postgresql import insert
-from aiohttp import ClientSession, ClientResponse, TCPConnector
+from aiohttp import ClientSession, ClientResponse, TCPConnector, ClientConnectionError
 from pydantic import Field
+from loguru import logger
 
 from config import MY_PEERS
 from db_api.db_engine import db
@@ -338,4 +341,35 @@ class AioHTTPClientExtended(AiohttpClient, ABC):
         async with self.session.request(url=url, method=method, data=data, **kwargs) as response:
             await response.read()
             return response
+
+
+class BotPollingExtended(BotPolling):
+    async def listen(self) -> AsyncGenerator[dict, None]:
+        retry_count = 0
+        server = await self.get_server()
+        logger.debug("Starting listening to longpoll")
+        while not self.stop:
+            try:
+                if not server:
+                    server = await self.get_server()
+                event = await self.get_event(server)
+                if not event.get("ts"):
+                    server = await self.get_server()
+                    continue
+                for i, update in enumerate(event.get('updates', [])):
+                    event_id = update.get('event_id')
+                    exist = await db.select([db.Event.event_id]).where(db.Event.event_id == event_id).gino.scalar()
+                    if exist:
+                        event['updates'].pop(i)
+                    else:
+                        await db.Event.create(event_id=event_id)
+                server["ts"] = event["ts"]
+                retry_count = 0
+                yield event
+            except (ClientConnectionError, asyncio.TimeoutError, VKAPIError[10]):
+                logger.error("Unable to make request to Longpoll, retrying...")
+                await asyncio.sleep(0.1 * retry_count)
+                server = {}
+            except Exception as e:
+                await self.error_handler.handle(e)
 

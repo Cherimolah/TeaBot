@@ -6,7 +6,7 @@ from db_api.db_engine import db
 import asyncio
 from utils.parsing import collect_names, convert_date
 from utils.parsing_users import parse_user_cases
-from sqlalchemy import and_, not_, update, bindparam
+from sqlalchemy import and_, not_, update, bindparam, or_
 from sqlalchemy.dialects.postgresql import insert
 from utils.views import get_names_user, waiting_punishment
 

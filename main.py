@@ -1,11 +1,13 @@
 import traceback
 from datetime import datetime, timedelta, timezone
 import asyncio
+from contextlib import asynccontextmanager
 
 import uvicorn
+from fastapi import FastAPI, Response, Request, BackgroundTasks
 
 from config import ADMIN_ID, DEBUG
-from loader import bot, app
+from loader import bot
 from ongoing.schedule import scheduler
 from ongoing.database_updater import update_users, update_users_in_chats, load_punisments
 from db_api.db_engine import db
@@ -13,6 +15,7 @@ from db_api.db_engine import db
 import handlers
 import middlewares
 from handlers.rp_commands import add_rp_commands
+from config import secret_key, confirmation_code, GROUP_ID
 
 
 def number_error():
@@ -35,7 +38,6 @@ async def exception(e: Exception):
                                                           f"\n{traceback.format_exc()}", random_id=0)
 
 
-@app.on_event("startup")
 async def load_tasks():
     await db.connect()
     await add_rp_commands()
@@ -45,9 +47,37 @@ async def load_tasks():
     asyncio.create_task(load_punisments())
 
 
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    await load_tasks()
+    yield
+
+
+app = FastAPI(lifespan=lifespan)
+
+
+@app.post('/tea_bot')
+async def handle_callback(request: Request, background_task: BackgroundTasks):
+    try:
+        data = await request.json()
+    except:
+        return Response("not today", status_code=403)
+
+    if data["type"] == "confirmation" and abs(data['group_id']) == abs(GROUP_ID):
+        return Response(confirmation_code)
+
+    event = await db.select([db.Event.event_id]).where(db.Event.event_id == data['event_id']).gino.scalar()
+    if event:  # Event is stored
+        return Response('ok')
+
+    if data["secret"] == secret_key:
+        background_task.add_task(bot.process_event, data)
+        await db.Event.create(event_id=data['event_id'])
+    return Response("ok")
+
 if __name__ == '__main__':
     if DEBUG:
         bot.loop_wrapper.on_startup.append(load_tasks())
         bot.run_forever()
     else:
-        uvicorn.run(app, log_level='error')
+        uvicorn.run(app, log_level='error', port=8001)

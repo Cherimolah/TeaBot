@@ -170,6 +170,7 @@ class MyDatabase(Gino):
             __tablename__ = 'events'
 
             event_id = Column(Text, unique=True)
+            created_at = Column(TIMESTAMP, default=datetime.now)
 
         self.Event = Event
 
