@@ -50,7 +50,7 @@ async def user_profile(m: Message, to_user_id: int = None):
             invited_by_nickname, invited_by_name = await db.select([db.User.nickname, db.User.names[1]]).where(db.User.user_id == invited_by).gino.first()
         else:
             invited_by_nickname = None
-            invited_by_name = (await bot.api.groups.get_by_id(group_id=abs(invited_by)))[0].name
+            invited_by_name = (await bot.api.groups.get_by_id(group_id=abs(invited_by))).name
         reply += f"🤵 Пригласил{'a' if await db.is_woman_user(invited_by) else ''} " \
                  f"[{'club' if invited_by < 0 else 'id'}{abs(invited_by)}|{invited_by_nickname or invited_by_name}]\n" \
                  f"👴 В беседе с {joined_at.strftime('%d.%m.%Y %H:%M:%S')}\n"
