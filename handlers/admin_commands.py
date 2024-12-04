@@ -180,3 +180,15 @@ async def set_rang(m: Message, to_user_id: int):
     await m.reply(f"✅ {await db.get_mention_user(m.from_id, 0)} установил "
                           f"{await db.get_mention_user(to_user_id, 2)} ранг {rangnames[rank]}")
 
+
+@bot.on.chat_message(AdminCommand("тихийрежим", 2, for_all=True))
+@bot.on.chat_message(AdminCommand("тихий режим", 2, for_all=True))
+async def silent_mode(m: Message):
+    if not await db.select([db.Chat.silent_mode]).where(db.Chat.chat_id == m.chat_id).gino.scalar():
+        await bot.api.request('messages.disableChatWriting', {"chat_id": m.chat_id})
+        await db.Chat.update.values(silent_mode=True).where(db.Chat.chat_id == m.chat_id).gino.status()
+        await m.reply('Теперь писать в чат могут только администраторы')
+    else:
+        await bot.api.request('messages.enableChatWriting', {"chat_id": m.chat_id})
+        await db.Chat.update.values(silent_mode=False).where(db.Chat.chat_id == m.chat_id).gino.status()
+        await m.reply('Теперь писать в чат могут все участники')

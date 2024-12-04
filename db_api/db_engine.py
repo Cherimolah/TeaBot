@@ -76,6 +76,7 @@ class MyDatabase(Gino):
             rules = Column(Text)
             is_group = Column(Boolean)
             last_user_id = Column(BigInteger, default=0)
+            silent_mode = Column(Boolean, default=False)
 
             _idx = Index("chats_idx", "chat_id")
 
