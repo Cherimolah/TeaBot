@@ -5,10 +5,10 @@ from contextlib import asynccontextmanager
 from typing import Annotated
 
 import uvicorn
-from fastapi import FastAPI, Response, Request, BackgroundTasks, Form, HTTPException
+from fastapi import FastAPI, Response, Request, BackgroundTasks, Form
 from ayoomoney.types import NotificationBase
 
-from config import ADMIN_ID, DEBUG, YOOMONEY_TOKEN
+from config import ADMIN_ID, DEBUG, YOOMONEY_SECRET
 from loader import bot
 from ongoing.schedule import scheduler
 from ongoing.database_updater import update_users, update_users_in_chats, load_punisments
@@ -81,7 +81,7 @@ async def handle_callback(request: Request, background_task: BackgroundTasks):
 
 @app.post('/notification')
 async def new_order(data: Annotated[NotificationBase, Form()], background_task: BackgroundTasks):
-    is_valid_hash = data.check_sha1_hash(YOOMONEY_TOKEN)
+    is_valid_hash = data.check_sha1_hash(YOOMONEY_SECRET)
     if is_valid_hash is False:
         return Response(status_code=403, content="i'm busy")
     reciever = int(data.label.split('|')[0])
