@@ -2,15 +2,18 @@ import traceback
 from datetime import datetime, timedelta, timezone
 import asyncio
 from contextlib import asynccontextmanager
+from typing import Annotated
 
 import uvicorn
-from fastapi import FastAPI, Response, Request, BackgroundTasks
+from fastapi import FastAPI, Response, Request, BackgroundTasks, Form, HTTPException
+from ayoomoney.types import NotificationBase
 
-from config import ADMIN_ID, DEBUG
+from config import ADMIN_ID, DEBUG, YOOMONEY_TOKEN
 from loader import bot
 from ongoing.schedule import scheduler
 from ongoing.database_updater import update_users, update_users_in_chats, load_punisments
 from db_api.db_engine import db
+from utils.views import refill_balance
 
 import handlers
 import middlewares
@@ -74,6 +77,17 @@ async def handle_callback(request: Request, background_task: BackgroundTasks):
         background_task.add_task(bot.process_event, data)
         await db.Event.create(event_id=data['event_id'])
     return Response("ok")
+
+
+@app.post('/notification')
+async def new_order(data: Annotated[NotificationBase, Form()], background_task: BackgroundTasks):
+    is_valid_hash = data.check_sha1_hash(YOOMONEY_TOKEN)
+    if is_valid_hash is False:
+        return Response(status_code=403, content="i'm busy")
+    reciever = int(data.label.split('|')[0])
+    amount = int(data.withdraw_amount)
+    background_task.add_task(refill_balance, reciever, amount)
+    return Response(status_code=200, content="ok")
 
 if __name__ == '__main__':
     if DEBUG:

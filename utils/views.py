@@ -212,3 +212,8 @@ async def generate_text(max_chars: int = 4096) -> str:
     return text_model.make_short_sentence(
         max_chars=max_chars, tries=100
     ) or "Сгенерировать текст не удалось"
+
+
+async def refill_balance(user_id: int, amount: int):
+    await db.User.update.values(balnce=db.User.balance+amount).where(db.User.user_id == user_id).gino.status()
+    await bot.api.messages.send(f'🎉 Пополнен баланс на сумму {amount}🧊!', peer_id=user_id)
