@@ -59,7 +59,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(lifespan=lifespan)
 
 
-@app.post('/tea_bot')
+@app.post('/event')
 async def handle_callback(request: Request, background_task: BackgroundTasks):
     try:
         data = await request.json()
