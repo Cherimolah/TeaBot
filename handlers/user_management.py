@@ -95,9 +95,10 @@ async def buy_defend(m: Message):
 
 @bot.on.message(text="пополнить баланс <amount:int>")
 async def buy_sugar(m: Message, amount: int = None):
+    message = await m.answer('⌛️ Формируем ссылку для оплаты')
     bill = await yoomoney.create_payment_form(
             amount_rub=amount,
-            unique_label=f"{m.from_id}|{m.peer_id}|{m.conversation_message_id}|{int(time.time())}",
+            unique_label=f"{m.from_id}|{m.peer_id}|{message.conversation_message_id}|{int(time.time())}",
             payment_source=PaymentSource.YOOMONEY_WALLET,
             success_redirect_url="https://vk.me/your_tea_bot",
         )
