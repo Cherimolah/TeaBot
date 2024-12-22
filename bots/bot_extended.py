@@ -123,9 +123,12 @@ class MessagesCategoryExtended(MessagesCategory):
             **kwargs
     ) -> bool:
         try:
-            response = await super().edit(peer_id, message, lat, long, attachment, keep_forward_messages,
-                                      keep_snippets, group_id, dont_parse_links, disable_mentions,
-                                      message_id, conversation_message_id, template, keyboard, **kwargs)
+            response = await super().edit(peer_id=peer_id, message=message, lat=lat, long=long, attachment=attachment,
+                                          keep_forward_messages=keep_forward_messages,
+                                      keep_snippets=keep_snippets, group_id=group_id, dont_parse_links=dont_parse_links,
+                                          disable_mentions=disable_mentions,
+                                      message_id=message_id, conversation_message_id=conversation_message_id,
+                                          template=template, keyboard=keyboard, **kwargs)
             if peer_id not in MY_PEERS:
                 await (insert(db.StatsTotal).values(date=datetime.now().date(), income_msgs=1)
                        .on_conflict_do_update(index_elements=[db.StatsTotal.date],
@@ -202,8 +205,11 @@ class MessageEventMinExtended(MessageEventMin):
         if isinstance(keyboard, Keyboard):
             keyboard = keyboard.get_json()
         try:
-            response = await super().edit_message(message, lat, long, attachment, keep_forward_messages, keep_snippets,
-                                                  dont_parse_links, template, keyboard, **kwargs)
+            response = await super().edit_message(message=message, lat=lat, long=long, attachment=attachment,
+                                                  keep_forward_messages=keep_forward_messages,
+                                                  keep_snippets=keep_snippets,
+                                                  dont_parse_links=dont_parse_links,
+                                                  template=template, keyboard=keyboard, **kwargs)
             if self.object.peer_id not in MY_PEERS:
                 await (insert(db.StatsTotal).values(date=datetime.now().date(), edited_msgs=1)
                        .on_conflict_do_update(index_elements=[db.StatsTotal.date],

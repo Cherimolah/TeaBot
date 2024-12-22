@@ -7,7 +7,7 @@ load_dotenv()
 
 BOT_TOKEN = os.environ.get('BOT_TOKEN')
 USER_TOKEN = os.environ.get('USER_TOKEN')
-QIWI_TOKEN = os.environ.get("QIWI_TOKEN")
+YOOMONEY_TOKEN = os.environ.get("YOOMONEY_TOKEN")
 HOST = os.environ.get("HOST")
 USER = os.environ.get("USER_POSTGRES")
 PASSWORD = os.environ.get('PASSWORD')

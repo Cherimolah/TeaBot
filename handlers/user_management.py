@@ -3,10 +3,11 @@ from decimal import Decimal
 
 from vkbottle.bot import Message, MessageEvent
 from vkbottle import Keyboard, KeyboardButtonColor, Callback, OpenLink, GroupEventType
+from ayoomoney.types import PaymentSource, OperationHistoryParams, OperationStatus
 
 from sqlalchemy import and_
 
-from loader import bot, evg, qiwi
+from loader import bot, yoomoney
 from utils.custom_rules import Command, CommandWithAnyArgs, InteractionUsers
 from utils.parsing import parse_cooldown
 from utils.parsing_users import get_register_date
@@ -94,13 +95,17 @@ async def buy_defend(m: Message):
 
 @bot.on.message(text="пополнить баланс <amount:int>")
 async def buy_sugar(m: Message, amount: int = None):
-    from loader import qiwi
-    bill = await qiwi.bill(amount=amount, lifetime=15, comment=f"{m.from_id}")
-    url = f"https://everybots.ru/qiwiredirect?invoice_uid={bill.pay_url[-36:]}"
-    kb = Keyboard(inline=True).add(OpenLink(url, "Оплатить", {"bill_redirect": bill.bill_id}),
+    bill = await yoomoney.create_payment_form(
+            amount_rub=amount,
+            unique_label=f"{m.from_id}|{int(time.time())}",
+            payment_source=PaymentSource.YOOMONEY_WALLET,
+            success_redirect_url="https://vk.me/your_tea_bot",
+        )
+    kb = Keyboard(inline=True).add(OpenLink(bill.link_for_customer, "Оплатить",
+                                            {"bill_redirect": bill.payment_label}),
                                    KeyboardButtonColor.SECONDARY)
     kb.row()
-    kb.add(Callback("Проверить оплату", {"bill_check": bill.bill_id}), KeyboardButtonColor.SECONDARY)
+    kb.add(Callback("Проверить оплату", {"bill_check": bill.payment_label}), KeyboardButtonColor.SECONDARY)
     await m.reply("Счёт для оплаты создан, оплатите в течении 15 минут", keyboard=kb)
 
 
@@ -109,10 +114,17 @@ async def confirm_buy_sugar(m: MessageEvent):
     if "bill_check" not in m.object.payload:
         return
     bill_id: int = m.object.payload['bill_check']
-    bill = await qiwi.check(bill_id)
-    if bill.status != "PAID":
-        await m.show_snackbar("Счёт не оплачен")
+    params = OperationHistoryParams(label=bill_id)
+    history = await yoomoney.get_operation_history(params)
+    if not history or len(history.operations) <= 0:
+        status = None
+    else:
+        status = history.operations[0].status
+    if status != OperationStatus.SUCCESS:
+        await m.show_snackbar('Счёт не оплачен')
         return
-    await db.User.update.values(balance=db.User.balance+int(float(bill.amount))).where(
-        db.User.user_id == int(bill.comment)).gino.status()
+    label = history.operations[0].label
+    amount = history.operations[0].amount
+    user_id = int(label.split('|')[0])
+    await db.User.update.values(balance=db.User.balance+amount).where(db.User.user_id == user_id).gino.status()
     await m.edit_message("🎉 Баланс успешно пополнен!")
