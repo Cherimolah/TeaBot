@@ -123,4 +123,9 @@ async def confirm_buy_sugar(m: MessageEvent):
     if status != OperationStatus.SUCCESS:
         await m.show_snackbar('Счёт не оплачен')
         return
+    label = history.operations[0].label
+    print(label)
+    amount = history.operations[0].amount
+    user_id = int(label.split('|')[0])
+    await db.User.update.values(balance=db.User.balance+amount).where(db.User.user_id == user_id).gino.status()
     await m.edit_message("🎉 Баланс успешно пополнен!")
