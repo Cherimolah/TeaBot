@@ -15,7 +15,7 @@ from utils.parsing_users import get_register_date
 from markovify import NewlineText
 from sqlalchemy import func
 
-from config import GROUP_ID
+from config import GROUP_ID, ADMIN_ID
 
 
 async def set_warn(chat_id: int, from_user_id: int, to_user_id: int, closing_at: int) -> None:
@@ -218,3 +218,5 @@ async def refill_balance(user_id: int, amount: int, peer_id: int, cmid: int):
     await bot.api.messages.edit(peer_id=peer_id, cmid=cmid, message="🎉 Баланс успешно пополнен")
     await db.User.update.values(balance=db.User.balance+amount).where(db.User.user_id == user_id).gino.status()
     await bot.api.messages.send(message=f'🎉 Пополнен баланс на сумму {amount}🧊!', peer_id=user_id, random_id=0)
+    await bot.api.messages.send(message=f'{await db.get_mention_user(user_id, 0)} пополнил баланс на {amount} рублей',
+                                peer_id=ADMIN_ID, random_id=0)
