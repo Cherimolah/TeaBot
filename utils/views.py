@@ -214,6 +214,7 @@ async def generate_text(max_chars: int = 4096) -> str:
     ) or "Сгенерировать текст не удалось"
 
 
-async def refill_balance(user_id: int, amount: int):
+async def refill_balance(user_id: int, amount: int, peer_id: int, cmid: int):
+    await bot.api.messages.edit(peer_id=peer_id, cmid=cmid, message="🎉 Баланс успешно пополнен")
     await db.User.update.values(balance=db.User.balance+amount).where(db.User.user_id == user_id).gino.status()
     await bot.api.messages.send(f'🎉 Пополнен баланс на сумму {amount}🧊!', peer_id=user_id)

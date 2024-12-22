@@ -97,7 +97,7 @@ async def buy_defend(m: Message):
 async def buy_sugar(m: Message, amount: int = None):
     bill = await yoomoney.create_payment_form(
             amount_rub=amount,
-            unique_label=f"{m.from_id}|{int(time.time())}",
+            unique_label=f"{m.from_id}|{m.peer_id}|{m.conversation_message_id}|{int(time.time())}",
             payment_source=PaymentSource.YOOMONEY_WALLET,
             success_redirect_url="https://vk.me/your_tea_bot",
         )
@@ -123,8 +123,4 @@ async def confirm_buy_sugar(m: MessageEvent):
     if status != OperationStatus.SUCCESS:
         await m.show_snackbar('Счёт не оплачен')
         return
-    label = history.operations[0].label
-    amount = history.operations[0].amount
-    user_id = int(label.split('|')[0])
-    await db.User.update.values(balance=db.User.balance+amount).where(db.User.user_id == user_id).gino.status()
     await m.edit_message("🎉 Баланс успешно пополнен!")

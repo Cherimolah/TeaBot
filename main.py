@@ -84,9 +84,9 @@ async def new_order(data: Annotated[NotificationBase, Form()], background_task: 
     is_valid_hash = data.check_sha1_hash(YOOMONEY_SECRET)
     if is_valid_hash is False:
         return Response(status_code=403, content="i'm busy")
-    reciever = int(data.label.split('|')[0])
+    receiver, peer_id, cmid, _ = map(int, data.label.strip().split("|"))
     amount = int(data.withdraw_amount)
-    background_task.add_task(refill_balance, reciever, amount)
+    background_task.add_task(refill_balance, receiver, amount, peer_id, cmid)
     return Response(status_code=200, content="ok")
 
 if __name__ == '__main__':
