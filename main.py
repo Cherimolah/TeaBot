@@ -84,9 +84,14 @@ async def new_order(data: Annotated[NotificationBase, Form()], background_task: 
     is_valid_hash = data.check_sha1_hash(YOOMONEY_SECRET)
     if is_valid_hash is False:
         return Response(status_code=403, content="i'm busy")
-    receiver, peer_id, cmid, _ = map(int, data.label.strip().split("|"))
-    amount = int(data.withdraw_amount)
-    background_task.add_task(refill_balance, receiver, amount, peer_id, cmid)
+    try:
+        payment_id = int(data.label.split("Покупка в группе vk.com/your_tea_bot №")[1])
+    except:
+        return Response('ok')  # Перевод пришёл с неправильным названием, пропустим его
+    payment = await db.Payment.get(payment_id)
+    if payment.is_claimed:
+        return Response('ok')
+    background_task.add_task(refill_balance, payment)
     return Response(status_code=200, content="ok")
 
 if __name__ == '__main__':

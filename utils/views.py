@@ -216,9 +216,10 @@ async def generate_text(max_chars: int = 4096) -> str:
     ) or "Сгенерировать текст не удалось"
 
 
-async def refill_balance(user_id: int, amount: int, peer_id: int, cmid: int):
-    await bot.api.messages.edit(peer_id=peer_id, cmid=cmid, message="🎉 Баланс успешно пополнен")
-    await db.User.update.values(balance=db.User.balance+amount).where(db.User.user_id == user_id).gino.status()
-    await bot.api.messages.send(message=f'🎉 Пополнен баланс на сумму {amount}🧊!', peer_id=user_id, random_id=0)
-    await bot.api.messages.send(message=f'{await db.get_mention_user(user_id, 0)} пополнил баланс на {amount} рублей',
+async def refill_balance(payment: db.Payment):
+    await db.Payment.update.values(is_claimed=True).where(db.Payment.id == payment.id).gino.status()
+    await bot.api.messages.edit(peer_id=payment.peer_id, cmid=payment.cmid, message="🎉 Баланс успешно пополнен")
+    await db.User.update.values(balance=db.User.balance+payment.amount).where(db.User.user_id == payment.user_id).gino.status()
+    await bot.api.messages.send(message=f'🎉 Пополнен баланс на сумму {payment.amount}🧊!', peer_id=payment.user_id, random_id=0)
+    await bot.api.messages.send(message=f'{await db.get_mention_user(payment.user_id, 0)} пополнил баланс на {payment.amount} рублей',
                                 peer_id=ADMIN_ID, random_id=0)

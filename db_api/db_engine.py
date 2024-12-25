@@ -200,6 +200,18 @@ class MyDatabase(Gino):
 
         self.RouletteGame = RouletteGame
 
+        class Payment(self.Model):
+            __tablename__ = 'payments'
+
+            id = Column(Integer, primary_key=True)
+            user_id = Column(BigInteger, ForeignKey('users.user_id', ondelete='CASCADE'), nullable=False)
+            amount = Column(Integer, nullable=False)
+            peer_id = Column(BigInteger, nullable=False)
+            cmid = Column(Integer, nullable=False)
+            is_claimed = Column(Boolean, default=False)
+
+        self.Payment = Payment
+
     async def connect(self):
         """Подключение к базе данных"""
         await self.set_bind(f"postgresql://{USER}:{PASSWORD}@{HOST}/{DATABASE}")
