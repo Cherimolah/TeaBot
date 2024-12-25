@@ -72,7 +72,8 @@ async def wait_captcha_user(message: Message, user_id: int, time_sleep: int):
     if user_id in captcha_users:
         user = (await bot.api.users.get(user_id))[0]
         await bot.api.messages.send(message.peer_id, f'[id{user_id}|{user.first_name} {user.last_name}] был заблокирован так как не прошёл капчу')
-        await db.UserToChat.update.values(in_chat=False).where(and_(db.UserToChat.chat_id == message.chat_id,
+        # message.chat_id атрибута нету, т.к. message там исходящий
+        await db.UserToChat.update.values(in_chat=False).where(and_(db.UserToChat.chat_id == message.peer_id - 2000000000,
                                                                     db.UserToChat.user_id == user_id)).gino.status()
         await bot.api.messages.remove_chat_user(user_id=user_id, chat_id=message.peer_id - 2000000000)
         del captcha_users[user_id]
