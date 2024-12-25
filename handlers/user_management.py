@@ -110,7 +110,10 @@ async def buy_sugar(m: Message, amount: int = None):
                                    KeyboardButtonColor.SECONDARY)
     kb.row()
     kb.add(Callback("Проверить оплату", {"bill_check": bill.payment_label}), KeyboardButtonColor.SECONDARY)
-    await bot.api.messages.edit(message="Счёт для оплаты создан, оплатите в течении 15 минут", keyboard=kb,
+    await bot.api.messages.edit(message="Счёт для оплаты создан, оплатите в течении 15 минут\n\n"
+                                        "⚪ Оплачивайте только по той ссылке, которую скинул бот\n\n"
+                                        "⚪ При оплате картой советуем использовать Сбер. Другие банки могут взимать "
+                                        "комиссию 100 руб.", keyboard=kb,
                                 peer_id=message.peer_id, cmid=message.conversation_message_id)
 
 
