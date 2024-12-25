@@ -209,6 +209,7 @@ class MyDatabase(Gino):
             peer_id = Column(BigInteger, nullable=False)
             cmid = Column(Integer, nullable=False)
             is_claimed = Column(Boolean, default=False)
+            url = Column(Text)
 
         self.Payment = Payment
 

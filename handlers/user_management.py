@@ -12,7 +12,7 @@ from utils.custom_rules import Command, CommandWithAnyArgs, InteractionUsers
 from utils.parsing import parse_cooldown
 from utils.parsing_users import get_register_date
 from db_api.db_engine import db
-from config import DATE_PARSING
+from config import DATE_PARSING, DOMAIN, GROUP_TAG
 
 
 @bot.on.message(Command("профиль"))
@@ -100,11 +100,12 @@ async def buy_sugar(m: Message, amount: int = None):
                                       amount=amount)
     bill = await yoomoney.create_payment_form(
             amount_rub=amount,
-            unique_label=f"Покупка в группе vk.com/your_tea_bot №{payment.id}",
+            unique_label=f"Покупка в группе vk.com/{GROUP_TAG} №{payment.id}",
             payment_source=PaymentSource.YOOMONEY_WALLET,
-            success_redirect_url="https://vk.me/your_tea_bot",
+            success_redirect_url=f"https://vk.me/{GROUP_TAG}",
     )
-    kb = Keyboard(inline=True).add(OpenLink(bill.link_for_customer, "Оплатить",
+    await db.Payment.update.values(url=bill.link_for_customer).where(db.Payment.id == payment.id).gino.status()
+    kb = Keyboard(inline=True).add(OpenLink(f'https://{DOMAIN}/payment?payment_id={payment.id}', "Оплатить",
                                             {"bill_redirect": bill.payment_label}),
                                    KeyboardButtonColor.SECONDARY)
     kb.row()

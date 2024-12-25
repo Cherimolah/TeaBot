@@ -6,6 +6,7 @@ from typing import Annotated
 
 import uvicorn
 from fastapi import FastAPI, Response, Request, BackgroundTasks, Form
+from fastapi.responses import RedirectResponse
 from ayoomoney.types import NotificationBase
 
 from config import ADMIN_ID, DEBUG, YOOMONEY_SECRET
@@ -93,6 +94,15 @@ async def new_order(data: Annotated[NotificationBase, Form()], background_task: 
         return Response('ok')
     background_task.add_task(refill_balance, payment)
     return Response(status_code=200, content="ok")
+
+
+@app.get('/payment')
+async def payment_redirect(payment_id: int):
+    payment = await db.Payment.get(payment_id)
+    if not payment or payment.is_claimed:
+        return Response('sad sigma', status_code=412)
+    return RedirectResponse(url=payment.url)
+
 
 if __name__ == '__main__':
     if DEBUG:

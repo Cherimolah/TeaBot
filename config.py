@@ -26,3 +26,5 @@ confirmation_code = os.environ.get('CONFIRMATION_CODE')
 DATE_PARSING = os.environ.get('DATE_PARSING')
 DEBUG = os.environ.get('DEBUG') == 'True'
 FONT_PATH = os.environ.get('FONT_PATH')
+DOMAIN = os.environ.get('DOMAIN')
+GROUP_TAG = os.environ.get('GROUP_TAG')
