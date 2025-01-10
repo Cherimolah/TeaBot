@@ -34,6 +34,7 @@ err_num = number_error()
 
 
 async def process_event(event: dict) -> None:
+    await bot.router.route(event, bot.api)
     events = get_transliterate_updates([event])
     for event in events:
         await bot.router.route(event, bot.api)
