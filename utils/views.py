@@ -224,3 +224,5 @@ async def refill_balance(payment: db.Payment):
     await bot.api.messages.send(message=f'🎉 Пополнен баланс на сумму {payment.amount}🧊!', peer_id=payment.user_id, random_id=0)
     await bot.api.messages.send(message=f'{await db.get_mention_user(payment.user_id, 0)} пополнил баланс на {payment.amount} рублей',
                                 peer_id=ADMIN_ID, random_id=0)
+
+

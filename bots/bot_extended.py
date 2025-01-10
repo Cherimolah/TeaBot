@@ -5,6 +5,7 @@ from typing import Optional, Union, List, AsyncGenerator
 from abc import ABC
 from datetime import datetime
 import asyncio
+from copy import deepcopy
 
 from vkbottle_types.methods.messages import MessagesCategory
 from vkbottle_types.methods.users import UsersCategory
@@ -371,11 +372,44 @@ class BotPollingExtended(BotPolling):
                         await db.Event.create(event_id=event_id)
                 server["ts"] = event["ts"]
                 retry_count = 0
-                yield event
+                updates = [event]
+                if event.get('updates'):
+                    for i, update in enumerate(event.get('updates', [])):
+                        if update.get('type') == 'message_new':
+                            event_tr = deepcopy(event)
+                            event_tr['updates'][i]['object']['message']['text'] = transliterate(update['object']['message']['text'])
+                            updates.append(event_tr)
+                for e in updates:
+                    yield e
             except (ClientConnectionError, asyncio.TimeoutError, VKAPIError[10]):
                 logger.error("Unable to make request to Longpoll, retrying...")
                 await asyncio.sleep(0.1 * retry_count)
                 server = {}
             except Exception as e:
                 await self.error_handler.handle(e)
+
+
+chars = {
+    'a': 'ф', 'b': 'и', 'c': 'с', 'd': 'в', 'e': 'у', 'f': 'а', 'g': 'п', 'h': 'р', 'i': 'ш', 'j': 'о',
+    'k': 'л', 'l': 'д', 'm': 'ь', 'n': 'т', 'o': 'щ', 'p': 'з', 'q': 'й', 'r': 'к', 's': 'ы', 't': 'е',
+    'u': 'г', 'v': 'м', 'w': 'ц', 'x': 'ч', 'y': 'н', 'z': 'я', '`': 'ё', '[': 'х', ']': 'ъ', ';': 'ж',
+    "'": 'э', ',': 'б', '.': 'ю', '~': 'Ё', '{': 'Х', '}': 'Ъ', ':': 'Ж', '"': 'Э', '<': 'Б', '>': 'Ю'
+}
+
+invert_chars = {v: k for k, v in chars.items()}
+
+
+def transliterate(text: str) -> str:
+    result = ''
+    for c in text:
+        if c.lower() in chars:
+            if c.islower():
+                result += chars[c]
+            else:
+                result += chars[c.lower()]
+        elif c.lower() in invert_chars:
+            result += invert_chars[c.lower()]
+        else:
+            result += c
+    return result
 
