@@ -1,3 +1,4 @@
+import json
 import os
 
 from loader import bot, client
@@ -64,3 +65,14 @@ async def update_rp_commands(m: Message):
     await db.RPCommand.update.values(photos=array).where(db.RPCommand.command == command).gino.status()
     await m.reply("Добавил")
 
+
+@bot.on.private_message(AdminPanelCommand('апи '))
+async def api_request(m: Message):
+    text = m.text[4:]
+    method, *params = text.split(maxsplit=1)
+    if params:
+        params = json.loads(params[0])
+    else:
+        params = {}
+    response = await bot.api.request(method, params)
+    await m.reply(response)
