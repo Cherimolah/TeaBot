@@ -3,7 +3,6 @@ from datetime import datetime, timedelta, timezone
 import asyncio
 from contextlib import asynccontextmanager
 from typing import Annotated
-from copy import deepcopy
 
 import uvicorn
 from fastapi import FastAPI, Response, Request, BackgroundTasks, Form
@@ -34,10 +33,10 @@ def number_error():
 err_num = number_error()
 
 
-async def process_event(self, event: dict) -> None:
+async def process_event(event: dict) -> None:
     events = get_transliterate_event(event)
     for event in events:
-        await self.router.route(event, self.api)
+        await bot.router.route(event, bot.api)
 
 
 bot.process_event = process_event
