@@ -372,9 +372,15 @@ class BotPollingExtended(BotPolling):
                         await db.Event.create(event_id=event_id)
                 server["ts"] = event["ts"]
                 retry_count = 0
-                events = get_transliterate_event(event)
-                for ev in events:
-                    yield ev
+                if event.get('updates', []):
+                    updates_tr = get_transliterate_updates(event['updates'])
+                    event_tr = deepcopy(event)
+                    event_tr['updates'] = updates_tr
+                    yield event
+                    yield event_tr
+                else:
+                    yield event
+
             except (ClientConnectionError, asyncio.TimeoutError, VKAPIError[10]):
                 logger.error("Unable to make request to Longpoll, retrying...")
                 await asyncio.sleep(0.1 * retry_count)
@@ -408,13 +414,12 @@ def transliterate(text: str) -> str:
     return result
 
 
-def get_transliterate_event(event: dict) -> List[dict]:
-    updates = [event]
-    if event.get('updates'):
-        for i, update in enumerate(event.get('updates', [])):
-            if update.get('type') == 'message_new':
-                event_tr = deepcopy(event)
-                event_tr['updates'][i]['object']['message']['text'] = transliterate(
-                    update['object']['message']['text'])
-                updates.append(event_tr)
-    return updates
+def get_transliterate_updates(updates: List[dict]) -> List[dict]:
+    response = []
+    for update in updates:
+        if update.get('type') == 'message_new':
+            update = deepcopy(update)
+            update['object']['message']['text'] = transliterate(
+                update['object']['message']['text'])
+            response.append(update)
+    return response
