@@ -10,7 +10,7 @@ from loader import bot
 
 class StatsMessagesMiddleware(BaseMiddleware[Message], ABC):
     async def post(self):
-        if self.event.peer_id not in MY_PEERS:
+        if self.event.peer_id not in MY_PEERS and not self.event.transliterated:
             if self.event.peer_id < 2000000000:
                 await bot.api.messages.send(ADMIN_ID, f"{await db.get_mention_user(self.event.from_id, 0)} написал"
                                                       f"{'a' if await db.is_woman_user(self.event.from_id) else ''}: {self.event.text}")
