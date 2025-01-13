@@ -277,6 +277,7 @@ class MessagesMessageExtended(MessagesMessage):
     attachments: Optional[List["MessagesMessageAttachmentExtended"]] = None
     reply_message: Optional["MessagesForeignMessageExtended"] = None
     fwd_messages: Optional[List["MessagesForeignMessageExtended"]] = None
+    transliterated: Optional[bool] = None
 
 
 class MessageNewObjectExtended(MessageNewObject):
@@ -393,7 +394,8 @@ chars = {
     'a': 'ф', 'b': 'и', 'c': 'с', 'd': 'в', 'e': 'у', 'f': 'а', 'g': 'п', 'h': 'р', 'i': 'ш', 'j': 'о',
     'k': 'л', 'l': 'д', 'm': 'ь', 'n': 'т', 'o': 'щ', 'p': 'з', 'q': 'й', 'r': 'к', 's': 'ы', 't': 'е',
     'u': 'г', 'v': 'м', 'w': 'ц', 'x': 'ч', 'y': 'н', 'z': 'я', '`': 'ё', '[': 'х', ']': 'ъ', ';': 'ж',
-    "'": 'э', ',': 'б', '.': 'ю', '~': 'Ё', '{': 'Х', '}': 'Ъ', ':': 'Ж', '"': 'Э', '<': 'Б', '>': 'Ю'
+    "'": 'э', ',': 'б', '.': 'ю', '~': 'Ё', '{': 'Х', '}': 'Ъ', ':': 'Ж', '"': 'Э', '<': 'Б', '>': 'Ю',
+    '/': '.', '?': ','
 }
 
 invert_chars = {v: k for k, v in chars.items()}
@@ -417,9 +419,10 @@ def transliterate(text: str) -> str:
 def get_transliterate_updates(updates: List[dict]) -> List[dict]:
     response = []
     for update in updates:
-        if update.get('type') == 'message_new':
+        if update.get('type') == 'message_new' and update['object']['message']['text']:
             update = deepcopy(update)
             update['object']['message']['text'] = transliterate(
                 update['object']['message']['text'])
+            update['object']['message']['transliterated'] = True
             response.append(update)
     return response
