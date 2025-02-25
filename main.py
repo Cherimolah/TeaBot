@@ -14,7 +14,6 @@ from loader import bot
 from ongoing.schedule import scheduler
 from ongoing.database_updater import update_users, update_users_in_chats, load_punisments
 from db_api.db_engine import db
-from bots.bot_extended import get_transliterate_updates
 from utils.views import refill_balance
 
 import handlers
@@ -31,16 +30,6 @@ def number_error():
 
 
 err_num = number_error()
-
-
-async def process_event(event: dict) -> None:
-    await bot.router.route(event, bot.api)
-    events = get_transliterate_updates([event])
-    for event in events:
-        await bot.router.route(event, bot.api)
-
-
-bot.process_event = process_event
 
 
 @bot.error_handler.register_error_handler(Exception)

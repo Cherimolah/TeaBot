@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta, date
+from datetime import datetime, timedelta, date, timezone
 from loader import bot, evg
 from db_api.db_engine import db
 from config import ADMIN_ID, GROUP_ID
@@ -8,8 +8,8 @@ from sqlalchemy import and_, or_
 
 scheduler = AsyncIOScheduler()
 today = datetime.now()
-next_minute = datetime(today.year, today.month, today.day, today.hour, today.minute, 0) + timedelta(minutes=1)
-next_hour = datetime(today.year, today.month, today.day, today.hour, 0, 0) + timedelta(hours=1)
+next_minute = datetime(today.year, today.month, today.day, today.hour, today.minute, 0, tzinfo=timezone(timedelta(hours=3))) + timedelta(minutes=1)
+next_hour = datetime(today.year, today.month, today.day, today.hour, 0, 0, tzinfo=timezone(timedelta(hours=3))) + timedelta(hours=1)
 
 
 @scheduler.add_task(Cron(hour=23, minute=59, second=59))

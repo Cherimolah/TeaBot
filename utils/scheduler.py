@@ -66,8 +66,8 @@ class AsyncIOScheduler:
 
             async def decorator(*args, **kwargs):
                 if next_run_time:
-                    now = datetime.datetime.now()
-                    delta = next_run_time.timestamp() - now.timestamp()
+                    now = datetime.datetime.now(tz=datetime.timezone(datetime.timedelta(hours=3)))
+                    delta = (next_run_time - now).total_seconds()
                     await asyncio.sleep(delta)
                     await func(*args, **kwargs)
                 while True:
