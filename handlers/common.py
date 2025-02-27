@@ -25,11 +25,6 @@ setcontext(Context(rounding=ROUND_HALF_UP))
 screen_users = []
 
 
-@bot.on.message()
-async def test(message: Message):
-    1/0
-
-
 @bot.on.raw_event(GroupEventType.MESSAGE_EVENT, MessageEvent, PayloadRule({"command": "start"}))
 @bot.on.private_message(Command(["меню", "главное меню", "начать", "старт", "start"]))
 @bot.on.private_message(PayloadRule({"command": "start"}))
