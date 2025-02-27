@@ -1,11 +1,9 @@
 import enum
 import json
 import typing
-from typing import Optional, Union, List, AsyncGenerator
+from typing import Optional, Union, List
 from abc import ABC
 from datetime import datetime
-import asyncio
-from copy import deepcopy
 
 from vkbottle_types.methods.messages import MessagesCategory
 from vkbottle_types.methods.users import UsersCategory
@@ -14,7 +12,7 @@ from vkbottle_types.methods import messages
 from vkbottle.api.api import API, ABCAPI
 from vkbottle_types.responses.messages import MessagesSendUserIdsResponseItem
 from vkbottle_types.responses.users import UsersUserFull
-from vkbottle import VKAPIError, Keyboard
+from vkbottle import VKAPIError, Keyboard, Router, ErrorHandler
 from vkbottle.dispatch.views.bot import RawBotEventView, BotHandlerBasement, ABCBotMessageView, BotMessageView
 from vkbottle.tools.mini_types.bot.message_event import MessageEventMin
 from vkbottle.tools.mini_types.bot import MessageMin
@@ -24,10 +22,9 @@ from vkbottle_types.codegen.objects import VideoVideo, VideoVideoFull, PollsPoll
 from vkbottle_types.objects import MessagesMessageAttachment, MessagesMessage, MessagesForeignMessage
 from vkbottle_types.events.objects.group_event_objects import MessageNewObject
 from vkbottle_types.events.bot_events import MessageNew, BaseGroupEvent
-from vkbottle.polling.bot_polling import BotPolling
 
 from sqlalchemy.dialects.postgresql import insert
-from aiohttp import ClientSession, ClientResponse, TCPConnector, ClientConnectionError
+from aiohttp import ClientSession, ClientResponse, TCPConnector
 from pydantic import Field
 from loguru import logger
 
@@ -37,34 +34,11 @@ from db_api.db_engine import db
 
 class MessagesCategoryExtended(MessagesCategory):
 
-    async def send(
-            self,
-            user_id=None,
-            random_id=0,
-            peer_id=None,
-            peer_ids=None,
-            domain=None,
-            chat_id=None,
-            user_ids=None,
-            message=None,
-            lat=None,
-            long=None,
-            attachment=None,
-            reply_to=None,
-            forward_messages=None,
-            forward=None,
-            sticker_id=None,
-            group_id=None,
-            keyboard=None,
-            template=None,
-            payload=None,
-            content_source=None,
-            dont_parse_links=None,
-            disable_mentions=True,
-            intent=None,
-            subscribe_id=None,
-            **kwargs
-    ) -> typing.Union[int, typing.List[MessagesSendUserIdsResponseItem]]:
+    async def send(self, user_id=None, random_id=0, peer_id=None, peer_ids=None, domain=None, chat_id=None,
+                   user_ids=None, message=None, lat=None, long=None, attachment=None, reply_to=None,
+                   forward_messages=None, forward=None, sticker_id=None, group_id=None, keyboard=None, template=None,
+                   payload=None, content_source=None, dont_parse_links=None, disable_mentions=True, intent=None,
+                   subscribe_id=None, **kwargs) -> typing.Union[int, typing.List[MessagesSendUserIdsResponseItem]]:
         if user_id:
             peer_ids = [user_id]
             del user_id
@@ -93,36 +67,20 @@ class MessagesCategoryExtended(MessagesCategory):
                                               set_=dict(outcome_msgs=db.StatsTotal.outcome_msgs + 1))).gino.scalar()
         return msgs
 
-    async def remove_chat_user(
-            self,
-            chat_id: int,
-            user_id: typing.Optional[int] = None,
-            member_id: typing.Optional[int] = None,
-            **kwargs
-    ) -> int:
+    async def remove_chat_user(self, chat_id: int, user_id: typing.Optional[int] = None,
+                               member_id: typing.Optional[int] = None, **kwargs) -> int:
         try:
             return await super().remove_chat_user(chat_id, user_id, member_id, **kwargs)
         except VKAPIError:
             pass
 
-    async def edit(
-            self,
-            peer_id: int,
-            message: typing.Optional[str] = None,
-            lat: typing.Optional[float] = None,
-            long: typing.Optional[float] = None,
-            attachment: typing.Optional[str] = None,
-            keep_forward_messages: typing.Optional[bool] = None,
-            keep_snippets: typing.Optional[bool] = True,
-            group_id: typing.Optional[int] = None,
-            dont_parse_links: typing.Optional[bool] = None,
-            disable_mentions: typing.Optional[bool] = True,
-            message_id: typing.Optional[int] = None,
-            conversation_message_id: typing.Optional[int] = None,
-            template: typing.Optional[str] = None,
-            keyboard: typing.Optional[str] = None,
-            **kwargs
-    ) -> bool:
+    async def edit(self, peer_id: int, message: typing.Optional[str] = None, lat: typing.Optional[float] = None,
+                   long: typing.Optional[float] = None, attachment: typing.Optional[str] = None,
+                   keep_forward_messages: typing.Optional[bool] = None, keep_snippets: typing.Optional[bool] = True,
+                   group_id: typing.Optional[int] = None, dont_parse_links: typing.Optional[bool] = None,
+                   disable_mentions: typing.Optional[bool] = True, message_id: typing.Optional[int] = None,
+                   conversation_message_id: typing.Optional[int] = None, template: typing.Optional[str] = None,
+                   keyboard: typing.Optional[str] = None, **kwargs) -> bool:
         try:
             response = await super().edit(peer_id=peer_id, message=message, lat=lat, long=long, attachment=attachment,
                                           keep_forward_messages=keep_forward_messages,
@@ -142,27 +100,18 @@ class MessagesCategoryExtended(MessagesCategory):
                 keyboard=keyboard, **kwargs
             )
 
-    async def delete(
-        self,
-        message_ids: typing.Optional[typing.List[int]] = None,
-        spam: typing.Optional[bool] = None,
-        group_id: typing.Optional[int] = None,
-        delete_for_all: typing.Optional[bool] = None,
-        peer_id: typing.Optional[int] = None,
-        cmids: typing.Optional[typing.List[int]] = None,
-        **kwargs
-    ) -> typing.Dict[str, int]:
+    async def delete(self, message_ids: typing.Optional[typing.List[int]] = None, spam: typing.Optional[bool] = None,
+                     group_id: typing.Optional[int] = None, delete_for_all: typing.Optional[bool] = None,
+                     peer_id: typing.Optional[int] = None,cmids: typing.Optional[typing.List[int]] = None,
+                     **kwargs) -> typing.Dict[str, int]:
         return await super().delete(message_ids=message_ids, spam=spam, group_id=group_id,
                                     delete_for_all=delete_for_all, peer_id=peer_id, cmids=cmids, **kwargs)
 
 
 class UsersCategoryExtended(UsersCategory, ABC):
 
-    async def get(
-            self,
-            user_ids: typing.Optional[typing.List[typing.Union[int, str]]] = None,
-            fields: typing.Optional[typing.List[str]] = None,
-            name_case: typing.Optional[
+    async def get(self, user_ids: typing.Optional[typing.List[typing.Union[int, str]]] = None,
+                  fields: typing.Optional[typing.List[str]] = None, name_case: typing.Optional[
                 typing.Literal["nom", "gen", "dat", "acc", "ins", "abl"]
             ] = None,
             **kwargs
@@ -190,19 +139,11 @@ class APIExtended(APICategoriesExtended, API):
 
 class MessageEventMinExtended(MessageEventMin):
 
-    async def edit_message(
-            self,
-            message: Optional[str] = None,
-            lat: Optional[float] = None,
-            long: Optional[float] = None,
-            attachment: Optional[str] = None,
-            keep_forward_messages: Optional[bool] = None,
-            keep_snippets: Optional[bool] = None,
-            dont_parse_links: Optional[bool] = None,
-            template: Optional[str] = None,
-            keyboard: Optional[str] = None,
-            **kwargs,
-    ) -> int:
+    async def edit_message(self, message: Optional[str] = None, lat: Optional[float] = None,
+                        long: Optional[float] = None, attachment: Optional[str] = None,
+                           keep_forward_messages: Optional[bool] = None, keep_snippets: Optional[bool] = None,
+                           dont_parse_links: Optional[bool] = None, template: Optional[str] = None,
+                           keyboard: Optional[str] = None, **kwargs) -> int:
         if isinstance(keyboard, Keyboard):
             keyboard = keyboard.get_json()
         try:
@@ -332,13 +273,8 @@ class BotMessageViewExtended(ABCBotMessageViewExtended, BotMessageView):
 
 class AioHTTPClientExtended(AiohttpClient, ABC):
 
-    async def request_raw(
-        self,
-        url: str,
-        method: str = "GET",
-        data: Optional[dict] = None,
-        **kwargs,
-    ) -> "ClientResponse":
+    async def request_raw(self, url: str, method: str = "GET", data: Optional[dict] = None,
+                          **kwargs) -> "ClientResponse":
         connector = TCPConnector(ssl=False)
         if not self.session:
             self.session = ClientSession(
@@ -349,3 +285,29 @@ class AioHTTPClientExtended(AiohttpClient, ABC):
         async with self.session.request(url=url, method=method, data=data, **kwargs) as response:
             await response.read()
             return response
+
+
+class ErrorHandlerExtended(ErrorHandler):
+    async def handle(self, error: Exception, *args, **kwargs):
+        handler = self.lookup_handler(type(error)) or self.undefined_error_handler
+
+        if not handler:
+            if self.raise_exceptions:
+                raise error
+            logger.exception(error)
+            return
+        return await handler(error, *args, **kwargs)
+
+
+class RouterExtended(Router):
+    async def route(self, event: dict, ctx_api: "ABCAPI") -> None:
+        logger.debug("Routing update {}", event)
+
+        for view in self.views.values():
+            try:
+                if not await view.process_event(event):
+                    continue
+                await view.handle_event(event, ctx_api, self.state_dispenser)
+            except Exception as e:
+                await self.error_handler.handle(e, peer_id=event.get('object', {}).get('message', {}).get('peer_id'),
+                                                message=event.get('object', {}).get('message', {}).get('text'))
