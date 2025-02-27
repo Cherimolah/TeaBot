@@ -12,7 +12,7 @@ next_minute = datetime(today.year, today.month, today.day, today.hour, today.min
 next_hour = datetime(today.year, today.month, today.day, today.hour, 0, 0, tzinfo=timezone(timedelta(hours=3))) + timedelta(hours=1)
 
 
-# @scheduler.add_task(Cron(hour=23, minute=59, second=59))
+@scheduler.add_task(Cron(hour=23, minute=59, second=59))
 async def stats_notification():
     day = datetime.now().date()
     stats = await db.select([*db.StatsTotal]).where(db.StatsTotal.date == day).gino.first()
@@ -27,14 +27,14 @@ async def stats_notification():
                                               f"Общая активность: {stats[1] + stats[2] + stats[3] + stats[4]}")
 
 
-# @scheduler.add_task(Interval(hours=1), next_run_time=next_hour)
+@scheduler.add_task(Interval(hours=1), next_run_time=next_hour)
 async def kombucha_reduce():
     await db.User.update.values(kombucha=db.User.kombucha - 0.05).where(
         and_(db.User.kombucha >= 100, db.User.kombucha < 500)).gino.status()
     await db.User.update.values(kombucha=db.User.kombucha * 0.99).where(db.User.kombucha >= 500).gino.status()
 
 
-# @scheduler.add_task(Interval(minutes=10))
+@scheduler.add_task(Interval(minutes=10))
 async def set_online():
     try:
         await bot.api.groups.enable_online(GROUP_ID)
@@ -42,7 +42,7 @@ async def set_online():
         pass
 
 
-# @scheduler.add_task(Interval(hours=1), next_run_time=next_minute)
+@scheduler.add_task(Interval(hours=1), next_run_time=next_minute)
 async def update_stickers():
     last_id = await db.select([db.Sticker.id]).order_by(db.Sticker.id.desc()).limit(1).gino.scalar()
     if not last_id:
@@ -86,7 +86,7 @@ async def congratulation_birthday():
                                             disable_mentions=False)
 
 
-# @scheduler.add_task(Interval(hours=1))
+@scheduler.add_task(Interval(hours=1))
 async def clear_old_events():
     yesterday = datetime.now() - timedelta(days=1)
     await db.Event.delete.where(or_(db.Event.created_at < yesterday, db.Event.created_at.is_(None))).gino.status()
