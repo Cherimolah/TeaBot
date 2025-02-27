@@ -33,12 +33,13 @@ err_num = number_error()
 
 
 @bot.error_handler.register_error_handler(Exception)
-async def exception(e: Exception, peer_id: int = None, message: str = None):
+async def exception(e: Exception, peer_id: int, message: str, from_id: int):
     print((datetime.now(timezone(timedelta(hours=5)))).strftime("%d.%m.%Y %H:%M:%S"))
     num = next(err_num)
     print(f"[ERROR] №{num}: {e}")
     print(traceback.format_exc(), "\n")
-    await bot.api.messages.send(peer_id=ADMIN_ID, message=f"⚠ [Ошибка] №{num}\nPeer ID: {peer_id}\nMessage: {message}\n"
+    await bot.api.messages.send(peer_id=ADMIN_ID, message=f"⚠ [Ошибка] №{num}\nPeer ID: {peer_id}\nFrom ID: {from_id}\n"
+                                                          f"Message: {message}\n"
                                                           f"\n{traceback.format_exc()}", random_id=0)
 
 

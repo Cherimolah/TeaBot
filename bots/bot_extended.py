@@ -309,5 +309,7 @@ class RouterExtended(Router):
                     continue
                 await view.handle_event(event, ctx_api, self.state_dispenser)
             except Exception as e:
+                print(event.get('object', {}).get('message', {}).get('peer_id'))
                 await self.error_handler.handle(e, peer_id=event.get('object', {}).get('message', {}).get('peer_id'),
-                                                message=event.get('object', {}).get('message', {}).get('text'))
+                                                message=event.get('object', {}).get('message', {}).get('text'),
+                                                from_id=event.get('object', {}).get('message', {}).get('from_id'))
