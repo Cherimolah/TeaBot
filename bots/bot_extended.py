@@ -76,7 +76,7 @@ class MessagesCategoryExtended(MessagesCategory):
 
     async def edit(self, peer_id: int, message: typing.Optional[str] = None, lat: typing.Optional[float] = None,
                    long: typing.Optional[float] = None, attachment: typing.Optional[str] = None,
-                   keep_forward_messages: typing.Optional[bool] = None, keep_snippets: typing.Optional[bool] = True,
+                   keep_forward_messages: typing.Optional[bool] = True, keep_snippets: typing.Optional[bool] = True,
                    group_id: typing.Optional[int] = None, dont_parse_links: typing.Optional[bool] = None,
                    disable_mentions: typing.Optional[bool] = True, message_id: typing.Optional[int] = None,
                    conversation_message_id: typing.Optional[int] = None, template: typing.Optional[str] = None,
