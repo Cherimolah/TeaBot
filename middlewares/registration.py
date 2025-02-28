@@ -40,7 +40,10 @@ class RegistrationMiddleware(BaseMiddleware[Message], ABC):
                     if member.is_admin:
                         reply += f"\nПервый админ: https://vk.com/id{member.member_id}"
                         break
-                link = (await bot.api.messages.get_invite_link(self.event.peer_id)).link
+                try:
+                    link = (await bot.api.messages.get_invite_link(self.event.peer_id)).link
+                except VKAPIError:
+                    link = "Ссылка скрыта настройками приватности"
                 reply += f"\nСсылка на конфу: {link}"
                 await bot.api.messages.send(ADMIN_ID, reply)
             except VKAPIError:
