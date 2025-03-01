@@ -246,3 +246,36 @@ async def free_roulette(m: Message):
     await db.User.update.values(dollars=db.User.dollars + 1450, last_bonus=datetime.datetime.now()).where(db.User.user_id == m.from_id).gino.status()
     balance = await db.select([db.User.dollars]).where(db.User.user_id == m.from_id).gino.scalar()
     return f"✅ Вы получили 1450 💸\nБаланс: {balance} 💸"
+
+
+@bot.on.private_message(PayloadRule({"roulette": "change"}))
+async def send_info_change(m: Message):
+    await m.reply('Вот некоторые варианты обмена:', keyboard=keyboards.private.change_roulette)
+
+
+@bot.on.private_message(PayloadMapRule({"roulette_change": int}))
+async def change_roulette(m: Message):
+    number = int(m.payload['roulette_change'])
+    match number:
+        case 1:
+            sugar, dollars = 40, 10000
+        case 2:
+            sugar, dollars = 125, 35000
+        case 3:
+            sugar, dollars = 355, 11000
+        case 4:
+            sugar, dollars = 1120, 385000
+        case 5:
+            sugar, dollars = 3145, 1200000
+        case 6:
+            sugar, dollars = 9785, 4150000
+        case _:
+            await m.reply('Не ломай бота')
+            return
+    balance = await db.select([db.User.balance]).where(db.User.user_id == m.from_id).gino.scalar()
+    if balance < sugar:
+        await m.reply('Недостаточный баланс 🧊\n'
+                      'Пополнить баланс можно командой «пополнить баланс {число}»')
+        return
+    await db.User.update.values(balance=db.User.balance - sugar, dollars=db.User.dollars + dollars).where(db.User.user_id == m.from_id).gino.status()
+    await m.reply(f"✅ Успешный обмен {sugar}🧊 на {dollars}💸")

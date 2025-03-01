@@ -81,5 +81,23 @@ roulette = Keyboard().add(
 ).row().add(
     Text("🎁 БОНУС! Бесплатные доллары", {"roulette": "free"}), KeyboardButtonColor.POSITIVE
 ).row().add(
+    Text('Обмен 🧊 на 💸', {"roulette": "change"}), KeyboardButtonColor.PRIMARY
+).row().add(
     Text("Назад", {"command": "start"}), KeyboardButtonColor.NEGATIVE
+)
+
+change_roulette = Keyboard().add(
+    Text("40🧊 -> 10 000💸", {"roulette_change": 1}), KeyboardButtonColor.PRIMARY
+).row().add(
+    Text("125🧊 -> 35 000💸", {"roulette_change": 2}), KeyboardButtonColor.PRIMARY
+).row().add(
+    Text("355🧊 -> 110 000💸", {"roulette_change": 3}), KeyboardButtonColor.PRIMARY
+).row().add(
+    Text("1 120🧊 -> 385 000💸", {"roulette_change": 4}), KeyboardButtonColor.PRIMARY
+).row().add(
+    Text("3 145🧊 -> 1 200 000💸", {"roulette_change": 5}), KeyboardButtonColor.PRIMARY
+).row().add(
+    Text("9 785🧊 -> 4 150 000💸", {"roulette_change": 6}), KeyboardButtonColor.PRIMARY
+).row().add(
+    Text('Назад', {"main_menu": "roulette"}), KeyboardButtonColor.NEGATIVE
 )
