@@ -238,6 +238,7 @@ async def generate_ai_text(messages):
         messages=messages
     )
     text = completion.choices[0].message.content.replace('</think>', '')
+    text = text.replace('\\n', '\n')
     if not text:
         text = 'Не удалось сгенерировать ответ'
     return text
