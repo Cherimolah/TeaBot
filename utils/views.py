@@ -234,7 +234,7 @@ async def refill_balance(payment: db.Payment):
 
 async def generate_ai_text(messages):
     completion = await ai_client.chat.completions.create(
-        model="deepseek/deepseek-r1-distill-llama-70b:free",
+        model="google/gemini-2.0-pro-exp-02-05:free",
         messages=messages
     )
     text = completion.choices[0].message.content.replace('</think>', '')
