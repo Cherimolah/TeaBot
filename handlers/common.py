@@ -4,7 +4,6 @@ from decimal import Decimal, setcontext, Context, ROUND_HALF_UP
 import random
 import time
 import asyncio
-import re
 
 from vkbottle.dispatch.rules.base import PayloadRule, PayloadMapRule
 from vkbottle.bot import Message, MessageEvent
@@ -12,27 +11,19 @@ from vkbottle import Keyboard, Callback, KeyboardButtonColor
 from vkbottle import GroupEventType
 from sqlalchemy import func
 from sqlalchemy.sql import and_, or_
-from openai import AsyncOpenAI
 
-from utils.views import remember_kombucha, generate_text
+import keyboards.private
+from utils.views import remember_kombucha, generate_text, generate_ai_text
 from loader import bot
 from utils.custom_rules import Command, CommandWithAnyArgs, BotMentioned
 from db_api.db_engine import db
 from utils.parsing import get_count_page, parse_cooldown
-from utils.parsing_users import mention_regex
 from keyboards.private import main_kb
 from bots.uploaders import bot_photo_message_upl
 from loader import client
-from config import AI_API_KEY, GROUP_ID
 
 setcontext(Context(rounding=ROUND_HALF_UP))
 screen_users = []
-
-
-ai_client = AsyncOpenAI(
-    base_url="https://openrouter.ai/api/v1",
-    api_key=AI_API_KEY,
-)
 
 
 @bot.on.raw_event(GroupEventType.MESSAGE_EVENT, MessageEvent, PayloadRule({"command": "start"}))
@@ -282,7 +273,6 @@ async def generate_text_command(m: Message, max_chars=None):
 
 
 @bot.on.chat_message(BotMentioned())
-@bot.on.private_message()
 async def ai_chat_handler(m: Message):
     message = await m.reply('⏳ Размышляю....')
     if m.text.startswith("["):
@@ -291,19 +281,30 @@ async def ai_chat_handler(m: Message):
     if not m.text:
         await m.answer('Для того, чтобы использовать AI модель промпт надо написать')
         return
-    completion = await ai_client.chat.completions.create(
-        model="deepseek/deepseek-r1-distill-llama-70b:free",
-        messages=[
-            {
-                "role": "user",
-                "content": m.text
-            }
-        ]
-    )
-    text = completion.choices[0].message.content.replace('</think>', '')
+    text = await generate_ai_text([{"role": "user", "content": m.text}])
     await bot.api.messages.delete(cmids=[message.conversation_message_id], delete_for_all=True, peer_id=m.peer_id)
-    if not text:
-        await m.reply('Не удалось сгенерировать ответ')
-        return
     await m.reply(text)
 
+
+@bot.on.private_message(PayloadRule({"button": "reset_context"}))
+@bot.on.private_message(Command('♻ сброс контекста'))
+@bot.on.private_message(Command('сброс контекста'))
+@bot.on.private_message(Command('reset'))
+async def reset_context(m: Message):
+    await db.Context.delete.where(db.Context.user_id == m.from_id).gino.status()
+    await m.reply('✅ Контекст успешно сброшен')
+
+
+@bot.on.private_message()
+async def ai_chat_handler_private(m: Message):
+    message = await m.reply('⏳ Размышляю....')
+    await db.Context.create(user_id=m.from_id, role=True, content=m.text)
+    response = await db.select([db.Context.role, db.Context.content]).where(
+        db.Context.user_id == m.from_id).order_by(db.Context.content.desc()).gino.all()
+    messages = []
+    for role, content in response:
+        messages.append({"role": "user" if role else "assistant", "content": content})
+    reply = await generate_ai_text(messages)
+    await db.Context.create(user_id=m.from_id, role=False, content=reply)
+    await bot.api.messages.delete(cmids=[message.conversation_message_id], delete_for_all=True, peer_id=m.peer_id)
+    await m.reply(reply, keyboard=keyboards.private.main_kb)

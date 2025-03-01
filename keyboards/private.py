@@ -8,6 +8,8 @@ main_kb.add(Text("🔮 Узнать предсказание", {"button": "get_p
 main_kb.row()
 main_kb.add(Text("🍵 Получить эстетику", {"button": "get_aesthetic"}), KeyboardButtonColor.PRIMARY)
 main_kb.add(Text("🆘 Команды", {"button": "help"}), KeyboardButtonColor.SECONDARY)
+main_kb.row()
+main_kb.add(Text("♻ Сброс контекста", {"button": "reset_context"}), KeyboardButtonColor.PRIMARY)
 
 formats = []
 

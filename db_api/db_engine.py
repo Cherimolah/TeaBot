@@ -214,6 +214,16 @@ class MyDatabase(Gino):
 
         self.Payment = Payment
 
+        class Context(self.Model):
+            __tablename__ = 'context'
+
+            id = Column(Integer, primary_key=True)
+            user_id = Column(BigInteger, ForeignKey('users.user_id', ondelete='CASCADE'), nullable=False)
+            role = Column(Boolean)
+            content = Column(Text)
+
+        self.Context = Context
+
     async def connect(self):
         """Подключение к базе данных"""
         await self.set_bind(f"postgresql://{USER}:{PASSWORD}@{HOST}/{DATABASE}")

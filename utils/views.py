@@ -14,9 +14,15 @@ from vkbottle_types.responses.users import UsersUserFull
 from utils.parsing_users import get_register_date
 from markovify import NewlineText
 from sqlalchemy import func
+from openai import AsyncOpenAI
 
-from config import GROUP_ID, ADMIN_ID
+from config import GROUP_ID, ADMIN_ID, AI_API_KEY
 
+
+ai_client = AsyncOpenAI(
+    base_url="https://openrouter.ai/api/v1",
+    api_key=AI_API_KEY,
+)
 
 async def set_warn(chat_id: int, from_user_id: int, to_user_id: int, closing_at: int) -> None:
     await db.add_punishment(type_pun=Punishments.WARN, to_time=closing_at or None,
@@ -225,4 +231,14 @@ async def refill_balance(payment: db.Payment):
     await bot.api.messages.send(message=f'{await db.get_mention_user(payment.user_id, 0)} пополнил баланс на {payment.amount} рублей',
                                 peer_id=ADMIN_ID, random_id=0)
 
+
+async def generate_ai_text(messages):
+    completion = await ai_client.chat.completions.create(
+        model="deepseek/deepseek-r1-distill-llama-70b:free",
+        messages=messages
+    )
+    text = completion.choices[0].message.content.replace('</think>', '')
+    if not text:
+        text = 'Не удалось сгенерировать ответ'
+    return text
 
