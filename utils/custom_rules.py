@@ -57,8 +57,12 @@ class AdminCommand(ABCRule, ABC):
         self.for_all = for_all
 
     async def check(self, m: Message):
+        space = self.command.count(' ')
+        args = m.text.lower().split()
+        command_words = args[:space + 1]
+        command = " ".join(command_words)
         for prefix in PREFIXES:
-            if m.text.split(" ")[0].lower() == self.command or m.text.split(" ")[0].lower() == prefix + self.command:
+            if command == self.command or command == prefix + self.command:
                 if not self.for_all:
                     to_user_id = await get_id_mention_from_message(m, check_chat=False)
                 else:
@@ -212,3 +216,9 @@ class GameExists(ABCRule, ABC):
                 await m.answer("Игры нет такой! Не ломай бота")
                 return False
         return False
+
+
+class BotMentioned(ABCRule, ABC):
+    async def check(self, m: Message):
+        if m.text.startswith(f'[club{GROUP_ID}|') or (m.reply_message and m.reply_message.from_id == -GROUP_ID) or (m.fwd_messages and m.fwd_messages[0].from_id == -GROUP_ID):
+            return True

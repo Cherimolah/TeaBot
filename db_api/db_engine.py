@@ -57,9 +57,9 @@ class MyDatabase(Gino):
             boost_kombucha = Column(Boolean, default=False)
             birthday = Column(Date)
             reaction = Column(Integer)
-            dollars = Column(BigInteger, server_default="4999")
-            win_dollars = Column(BigInteger, server_default="0")
-            wins = Column(Integer, server_default="0")
+            dollars = Column(BigInteger, default=4999)
+            win_dollars = Column(BigInteger, default=0)
+            wins = Column(Integer, default=0)
             last_bonus = Column(TIMESTAMP)
 
             _idx = Index("users_ids_idx", "user_id")
@@ -77,6 +77,7 @@ class MyDatabase(Gino):
             is_group = Column(Boolean)
             last_user_id = Column(BigInteger, default=0)
             silent_mode = Column(Boolean, default=False)
+            generation_mode = Column(Boolean, default=True)
 
             _idx = Index("chats_idx", "chat_id")
 

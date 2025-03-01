@@ -28,3 +28,4 @@ DEBUG = os.environ.get('DEBUG') == 'True'
 FONT_PATH = os.environ.get('FONT_PATH')
 DOMAIN = os.environ.get('DOMAIN')
 GROUP_TAG = os.environ.get('GROUP_TAG')
+AI_API_KEY = os.environ.get('AI_API_KEY')

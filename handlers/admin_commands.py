@@ -192,3 +192,21 @@ async def silent_mode(m: Message):
         await bot.api.request('messages.enableChatWriting', {"chat_id": m.chat_id})
         await db.Chat.update.values(silent_mode=False).where(db.Chat.chat_id == m.chat_id).gino.status()
         await m.reply('Теперь писать в чат могут все участники')
+
+
+@bot.on.chat_message(AdminCommand('выключить генерацию', 2, for_all=True))
+@bot.on.chat_message(AdminCommand('выкл ген', 2, for_all=True))
+@bot.on.chat_message(AdminCommand('disable generation', 2, for_all=True))
+@bot.on.chat_message(AdminCommand('dis gen', 2, for_all=True))
+async def disable_generation(m: Message):
+    await db.Chat.update.values(generation_mode=False).where(db.Chat.chat_id == m.chat_id).gino.status()
+    await m.reply('🚫🤖🧠 Генерация случайного текста отключена')
+
+
+@bot.on.chat_message(AdminCommand('включить генерацию', 2, for_all=True))
+@bot.on.chat_message(AdminCommand('вкл ген', 2, for_all=True))
+@bot.on.chat_message(AdminCommand('enable generation', 2, for_all=True))
+@bot.on.chat_message(AdminCommand('en gen', 2, for_all=True))
+async def disable_generation(m: Message):
+    await db.Chat.update.values(generation_mode=True).where(db.Chat.chat_id == m.chat_id).gino.status()
+    await m.reply('✅🤖🧠 Генерация случайного текста включена')

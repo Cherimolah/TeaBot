@@ -4,6 +4,7 @@ from decimal import Decimal, setcontext, Context, ROUND_HALF_UP
 import random
 import time
 import asyncio
+import re
 
 from vkbottle.dispatch.rules.base import PayloadRule, PayloadMapRule
 from vkbottle.bot import Message, MessageEvent
@@ -11,18 +12,27 @@ from vkbottle import Keyboard, Callback, KeyboardButtonColor
 from vkbottle import GroupEventType
 from sqlalchemy import func
 from sqlalchemy.sql import and_, or_
+from openai import AsyncOpenAI
 
 from utils.views import remember_kombucha, generate_text
 from loader import bot
-from utils.custom_rules import Command, CommandWithAnyArgs
+from utils.custom_rules import Command, CommandWithAnyArgs, BotMentioned
 from db_api.db_engine import db
 from utils.parsing import get_count_page, parse_cooldown
+from utils.parsing_users import mention_regex
 from keyboards.private import main_kb
 from bots.uploaders import bot_photo_message_upl
 from loader import client
+from config import AI_API_KEY, GROUP_ID
 
 setcontext(Context(rounding=ROUND_HALF_UP))
 screen_users = []
+
+
+ai_client = AsyncOpenAI(
+    base_url="https://openrouter.ai/api/v1",
+    api_key=AI_API_KEY,
+)
 
 
 @bot.on.raw_event(GroupEventType.MESSAGE_EVENT, MessageEvent, PayloadRule({"command": "start"}))
@@ -269,3 +279,29 @@ async def generate_text_command(m: Message, max_chars=None):
                       "Значение должно быть от 1 до 4096")
         return
     await m.reply(await generate_text(max_chars))
+
+
+@bot.on.chat_message(BotMentioned())
+@bot.on.private_message()
+async def ai_chat_handler(m: Message):
+    message = await m.reply('⏳ Размышляю....')
+    if m.text.startswith("["):
+        end_mention = m.text.find(']')
+        m.text = m.text[end_mention+1:].strip()
+    if not m.text:
+        await m.answer('Для того, чтобы использовать AI модель промпт надо написать')
+        return
+    completion = await ai_client.chat.completions.create(
+        model="deepseek/deepseek-r1-distill-llama-70b:free",
+        messages=[
+            {
+                "role": "user",
+                "content": m.text
+            }
+        ],
+        max_tokens=4095
+    )
+    text = completion.choices[0].message.content.replace('</think>', '')
+    await bot.api.messages.delete(cmids=[message.conversation_message_id], delete_for_all=True, peer_id=m.peer_id)
+    await m.reply(text)
+
