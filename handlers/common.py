@@ -298,8 +298,7 @@ async def ai_chat_handler(m: Message):
                 "role": "user",
                 "content": m.text
             }
-        ],
-        max_tokens=4095
+        ]
     )
     text = completion.choices[0].message.content.replace('</think>', '')
     await bot.api.messages.delete(cmids=[message.conversation_message_id], delete_for_all=True, peer_id=m.peer_id)
