@@ -155,12 +155,12 @@ async def set_photos(m: Message):
     m_full = await m.get_full_message()
     photos = [x.photo for x in m_full.attachments if x.type == x.type.PHOTO]
     context[m.peer_id].photos = []
-    message = (await m.reply(f"Загружаю фотографии 0/{len(photos)}"))
+    # message = (await m.reply(f"Загружаю фотографии 0/{len(photos)}"))
     for i, photo in enumerate(photos):
         string = await re_upload_photo(photo, f"role_play{m.from_id}.jpg")
         context[m.peer_id].photos.append(string)
-        await bot.api.messages.edit(text=f"Загружаю фотографии {i+1}/{len(photos)}",
-                                    cmid=message.conversation_message_id, peer_id=m.peer_id)
+        # await bot.api.messages.edit(text=f"Загружаю фотографии {i+1}/{len(photos)}",
+        #                             cmid=message.conversation_message_id, peer_id=m.peer_id)
     command = context[m.peer_id]
     await db.RPCommand.create(command=command.command, emoji=command.emoji, action=command.action,
                               name_case=command.name_case, wom_action=command.action, photos=command.photos,
@@ -172,8 +172,7 @@ async def set_photos(m: Message):
 
     del context[m.peer_id]
     await bot.state_dispenser.delete(m.peer_id)
-    await bot.api.messages.edit(text="Рп команда добавлена! Теперь ты можешь использовать её в любой беседе со мной",
-                                cmid=message.conversation_message_id, peer_id=m.peer_id)
+    await m.reply("Рп команда добавлена! Теперь ты можешь использовать её в любой беседе со мной")
 
 
 async def add_rp_commands():
