@@ -1,7 +1,6 @@
 from loader import bot
 from vkbottle import BaseStateGroup
 from db_api.db_engine import db
-import asyncio
 from vkbottle.bot import Message
 import re
 from utils.parsing_users import get_id_mention_from_message
@@ -10,7 +9,7 @@ import random
 from typing import List, Dict
 from emoji import EMOJI_DATA
 from utils.photos import re_upload_photo
-from utils.custom_rules import RPCommandRule, OwnerRPCommand
+from utils.custom_rules import RPCommandRule, OwnerRPCommand, Command
 
 mention_regex = re.compile(r"\[(?P<type>id|club|public)(?P<id>\d*)\|(?P<text>.+)\]")
 link_regex = re.compile(r"https:/(?P<type>/|/m.)vk.com/(?P<screen_name>\w*)")
@@ -173,6 +172,18 @@ async def set_photos(m: Message):
     del context[m.peer_id]
     await bot.state_dispenser.delete(m.peer_id)
     await m.reply("Рп команда добавлена! Теперь ты можешь использовать её в любой беседе со мной")
+
+
+@bot.on.private_message(text='удалить рп <command>')
+async def delete_rp_command(m: Message, command: str):
+    exist = await db.select([db.RPCommand.id]).where(
+        and_(db.RPCommand.command == command, db.RPCommand.owner == m.from_id)).gino.scalar()
+    if not exist:
+        await m.reply('Команда не была создана')
+        return
+    await db.RPCommand.delete.where(db.RPCommand.id == exist).gino.status()
+    await db.User.update.values(balance=db.User.balance + 5).where(db.User.user_id == m.from_id).gino.status()
+    await m.reply('РП команда удалена, вам возвращено 5🧊')
 
 
 async def add_rp_commands():
