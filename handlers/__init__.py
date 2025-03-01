@@ -4,7 +4,7 @@ from . import chat_actions
 from . import interaction_users
 from . import admin_panel
 from . import group_events
-from . import glue_photos
 from . import user_management
 from . import roulette
+from . import glue_photos
 from . import common
