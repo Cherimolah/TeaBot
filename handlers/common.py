@@ -8,7 +8,7 @@ import asyncio
 from vkbottle.dispatch.rules.base import PayloadRule, PayloadMapRule
 from vkbottle.bot import Message, MessageEvent
 from vkbottle import Keyboard, Callback, KeyboardButtonColor
-from vkbottle import GroupEventType
+from vkbottle import GroupEventType, VKAPIError
 from sqlalchemy import func
 from sqlalchemy.sql import and_, or_
 
@@ -282,7 +282,10 @@ async def ai_chat_handler(m: Message):
     message = await m.reply('⏳ Размышляю....')
     text = await generate_ai_text([{"role": "user", "content": m.text}])
     await bot.api.messages.delete(cmids=[message.conversation_message_id], delete_for_all=True, peer_id=m.peer_id)
-    await m.reply(text)
+    try:
+        await m.reply(text)
+    except VKAPIError:
+        await m.reply('Не удалось сгенерировать ответ. Возможно необходимо сбросить контекст')
 
 
 @bot.on.private_message(PayloadRule({"button": "reset_context"}))
@@ -306,4 +309,7 @@ async def ai_chat_handler_private(m: Message):
     reply = await generate_ai_text(messages)
     await db.Context.create(user_id=m.from_id, role=False, content=reply)
     await bot.api.messages.delete(cmids=[message.conversation_message_id], delete_for_all=True, peer_id=m.peer_id)
-    await m.reply(reply, keyboard=keyboards.private.main_kb)
+    try:
+        await m.reply(reply, keyboard=keyboards.private.main_kb)
+    except VKAPIError:
+        await m.reply('Не удалось сгенерировать ответ. Возможно необходимо сбросить контекст')
