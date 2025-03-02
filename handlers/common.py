@@ -274,13 +274,12 @@ async def generate_text_command(m: Message, max_chars=None):
 
 @bot.on.chat_message(BotMentioned())
 async def ai_chat_handler(m: Message):
-    message = await m.reply('⏳ Размышляю....')
     if m.text.startswith("["):
         end_mention = m.text.find(']')
         m.text = m.text[end_mention+1:].strip()
     if not m.text:
-        await m.answer('Для того, чтобы использовать AI модель промпт надо написать')
         return
+    message = await m.reply('⏳ Размышляю....')
     text = await generate_ai_text([{"role": "user", "content": m.text}])
     await bot.api.messages.delete(cmids=[message.conversation_message_id], delete_for_all=True, peer_id=m.peer_id)
     await m.reply(text)
