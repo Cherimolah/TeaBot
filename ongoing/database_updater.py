@@ -12,6 +12,7 @@ from utils.views import get_names_user, waiting_punishment
 
 
 async def update_users() -> NoReturn:
+    return
     """Обновляет имена пользователей, пол и короткое имя"""
     while True:
         try:
@@ -34,6 +35,7 @@ async def update_users() -> NoReturn:
 
 
 async def update_users_in_chats() -> NoReturn:
+    return
     """Обновляет информацию о уровнях админки пользователей и состоянии в беседе"""
     while True:
         try:

@@ -1,7 +1,10 @@
-from typing import List, Union
+from typing import List, Union, Tuple, Dict, Optional
 import time
 import asyncio
 import random
+import re
+
+import grapheme
 
 from db_api.db_engine import db, Punishments
 from datetime import datetime
@@ -15,6 +18,8 @@ from utils.parsing_users import get_register_date
 from markovify import NewlineText
 from sqlalchemy import func
 from openai import AsyncOpenAI
+from emoji import EMOJI_DATA
+import emoji.unicode_codes.data_dict
 
 from config import GROUP_ID, ADMIN_ID, AI_API_KEY
 
@@ -23,6 +28,7 @@ ai_client = AsyncOpenAI(
     base_url="https://openrouter.ai/api/v1",
     api_key=AI_API_KEY,
 )
+emoji
 
 async def set_warn(chat_id: int, from_user_id: int, to_user_id: int, closing_at: int) -> None:
     await db.add_punishment(type_pun=Punishments.WARN, to_time=closing_at or None,
@@ -232,16 +238,56 @@ async def refill_balance(payment: db.Payment):
                                 peer_id=ADMIN_ID, random_id=0)
 
 
-async def generate_ai_text(messages):
+async def generate_ai_text(messages) -> Tuple[str, Optional[Dict]]:
     completion = await ai_client.chat.completions.create(
         model="google/gemini-2.0-pro-exp-02-05:free",
         messages=messages
     )
     if not completion.choices:
-        return 'Не удалось сгенерировать ответ'
+        return 'Не удалось сгенерировать ответ', None
     text = completion.choices[0].message.content.replace('</think>', '')
     text = text.replace('\\n', '\n')
     if not text:
-        text = 'Не удалось сгенерировать ответ'
+        return 'Не удалось сгенерировать ответ', None
+    text = re.sub(r'\n{3,}', '\n\n', text)
+    return format_text(text)
+
+
+def remove_variation_selectors(text):
+    text = text.replace("\ufe0f", "")
     return text
 
+
+
+def format_text(text: str) -> Tuple[str, Optional[Dict]]:
+    state = False  # Unbold
+    indexes: List[Tuple[int, int]] = []
+    start = 0
+    markdown = False
+    text = remove_variation_selectors(text)
+    for i in range(len(text) - 1):
+        if text[i] == '*' and text[i + 1] == '*':
+            markdown = True
+            if not state:
+                state = True
+                start = i + 2
+            else:
+                state = False
+                indexes.append((start, i - 1))
+    text = text.replace('**', '')
+    items = []
+    for i, data in enumerate(indexes):
+        a, b = data
+        items.append({
+            "type": "bold",
+            "offset": grapheme.length(text[:a - (i * 4 + 2)]),
+            "length": b - a + 1
+        })
+    if markdown:
+        format_data = {
+            "version": 1,
+            "items": items,
+        }
+        return text, format_data
+    else:
+        return text, None

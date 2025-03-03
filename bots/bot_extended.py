@@ -38,7 +38,8 @@ class MessagesCategoryExtended(MessagesCategory):
                    user_ids=None, message=None, lat=None, long=None, attachment=None, reply_to=None,
                    forward_messages=None, forward=None, sticker_id=None, group_id=None, keyboard=None, template=None,
                    payload=None, content_source=None, dont_parse_links=None, disable_mentions=True, intent=None,
-                   subscribe_id=None, **kwargs) -> typing.Union[int, typing.List[MessagesSendUserIdsResponseItem]]:
+                   subscribe_id=None, format_data=None, **kwargs) -> typing.Union[int, typing.List[MessagesSendUserIdsResponseItem]]:
+        real_format_data = None
         if user_id:
             peer_ids = [user_id]
             del user_id
@@ -53,12 +54,22 @@ class MessagesCategoryExtended(MessagesCategory):
         count = int(len(message) // 4096)
         msgs = []
         for number, i in enumerate(range(0, len(message), 4096)):
+            if format_data:
+                items = []
+                for item in format_data['items']:
+                    if i <= item['offset'] <= i + 4096:
+                        items.append({"type": item['type'], "offset": item['offset'] - i, "length": item['length']})
+                real_format_data = json.dumps({"version": 1, "items": items})
+                if not items:
+                    real_format_data = None
             if number < count:
-                params = {k: v for k, v in locals().items() if k not in ('self', 'message', 'attachment', 'keyboard')}
-                msgs.append(await super().send(message=message[i:i + 4096], **params))
+                print(real_format_data)
+                params = {k: v for k, v in locals().items() if k not in ('self', 'message', 'attachment', 'keyboard', 'format_data', 'real_format_data', 'item', 'items', 'params')}
+                msgs.append(await super().send(message=message[i:i + 4096], format_data=real_format_data, **params))
             else:
-                params = {k: v for k, v in locals().items() if k not in ('self', 'message')}
-                msgs.append(await super().send(message=message[i:i + 4096], **params))
+                print(real_format_data)
+                params = {k: v for k, v in locals().items() if k not in ('self', 'message', 'format_data', 'real_format_data', 'item', 'items', 'params')}
+                msgs.append(await super().send(message=message[i:i + 4096], format_data=real_format_data, **params))
         msgs = [y for x in msgs for y in x]
         for peer_id in peer_ids:
             if peer_id not in MY_PEERS:
@@ -309,7 +320,6 @@ class RouterExtended(Router):
                     continue
                 await view.handle_event(event, ctx_api, self.state_dispenser)
             except Exception as e:
-                print(event.get('object', {}).get('message', {}).get('peer_id'))
                 await self.error_handler.handle(e, peer_id=event.get('object', {}).get('message', {}).get('peer_id'),
                                                 message=event.get('object', {}).get('message', {}).get('text'),
                                                 from_id=event.get('object', {}).get('message', {}).get('from_id'))

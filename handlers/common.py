@@ -1,3 +1,4 @@
+import json
 from datetime import datetime, timedelta
 from random import choice, randint
 from decimal import Decimal, setcontext, Context, ROUND_HALF_UP
@@ -306,10 +307,13 @@ async def ai_chat_handler_private(m: Message):
     messages = []
     for role, content in response:
         messages.append({"role": "user" if role else "assistant", "content": content})
-    reply = await generate_ai_text(messages)
+    reply, format_data = await generate_ai_text(messages)
     await db.Context.create(user_id=m.from_id, role=False, content=reply)
     await bot.api.messages.delete(cmids=[message.conversation_message_id], delete_for_all=True, peer_id=m.peer_id)
+    await bot.api.messages.send(peer_id=m.peer_id, message=reply, random_id=0, format_data=format_data)
     try:
-        await m.reply(reply, keyboard=keyboards.private.main_kb)
-    except VKAPIError:
-        await m.reply('Не удалось сгенерировать ответ. Возможно необходимо сбросить контекст')
+        pass
+    # except VKAPIError:
+    #     await m.reply('Не удалось сгенерировать ответ. Возможно необходимо сбросить контекст')
+    except Exception as e:
+        print(e)
