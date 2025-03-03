@@ -18,8 +18,6 @@ from utils.parsing_users import get_register_date
 from markovify import NewlineText
 from sqlalchemy import func
 from openai import AsyncOpenAI
-from emoji import EMOJI_DATA
-import emoji.unicode_codes.data_dict
 
 from config import GROUP_ID, ADMIN_ID, AI_API_KEY
 
@@ -28,7 +26,7 @@ ai_client = AsyncOpenAI(
     base_url="https://openrouter.ai/api/v1",
     api_key=AI_API_KEY,
 )
-emoji
+
 
 async def set_warn(chat_id: int, from_user_id: int, to_user_id: int, closing_at: int) -> None:
     await db.add_punishment(type_pun=Punishments.WARN, to_time=closing_at or None,
