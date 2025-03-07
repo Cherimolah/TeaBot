@@ -49,7 +49,7 @@ class ChangeSettingsChat(ABCRule, ABC):
 
 
 class AdminCommand(ABCRule, ABC):
-    def __init__(self, command: str, min_rang: int, need_time: bool = False, check_chat=False, for_all=False):
+    def __init__(self, command: str, min_rang: int, need_time: bool = False, check_chat=True, for_all=False):
         self.command = command
         self.min_rang = min_rang
         self.need_time = need_time
@@ -64,11 +64,17 @@ class AdminCommand(ABCRule, ABC):
         for prefix in PREFIXES:
             if command == self.command or command == prefix + self.command:
                 if not self.for_all:
-                    to_user_id = await get_id_mention_from_message(m, check_chat=False)
+                    to_user_id = await get_id_mention_from_message(m, check_chat=self.check_chat)
                 else:
                     to_user_id = None
                 if not to_user_id and not self.for_all:
                     return False
+                if not self.for_all and to_user_id:
+                    exist = await db.select([db.UserToChat.user_id]).where(
+                        and_(db.UserToChat.user_id == to_user_id, db.UserToChat.chat_id == m.chat_id)).gino.scalar()
+                    if not exist:
+                        await m.reply('🤷‍♂ Указанный пользователь не зарегистрирован в этом чате')
+                        return False
                 if m.from_id < 0:
                     is_group_chat = await db.Chat.select('is_group').where(db.Chat.chat_id == m.from_id).gino.scalar()
                     members = await bot.api.messages.get_conversation_members(m.peer_id)

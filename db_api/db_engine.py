@@ -4,7 +4,7 @@ from typing import List, NoReturn
 from datetime import datetime
 
 from gino import Gino
-from vkbottle_types.codegen.objects import MessagesConversationMember
+from vkbottle_types.codegen.objects import MessagesGetConversationMembers
 from sqlalchemy import Column, BigInteger, ARRAY, VARCHAR, SmallInteger, DECIMAL, Boolean, Integer, sql, Index, Text, JSON
 from sqlalchemy import ForeignKey, TIMESTAMP, Date, and_
 from sqlalchemy.dialects.postgresql import insert
@@ -103,7 +103,7 @@ class MyDatabase(Gino):
 
             id = Column(Integer, primary_key=True)
             type = Column(SmallInteger)
-            chat_id = Column(ForeignKey('chats.chat_id'))
+            chat_id = Column(ForeignKey('chats.chat_id', ondelete='CASCADE'))
             created_at = Column(TIMESTAMP, default=datetime.now)
             closing_at = Column(TIMESTAMP)
             from_user_id = Column(BigInteger, ForeignKey('users.user_id', ondelete='CASCADE'))
@@ -233,22 +233,30 @@ class MyDatabase(Gino):
         """Проверяет зарегистрирован ли чат"""
         return bool(await self.Chat.query.where(self.Chat.chat_id == chat_id).gino.first())
 
-    async def register_chat(self, chat_id: int, members: List[MessagesConversationMember], users_responses) -> NoReturn:
+    async def register_chat(self, chat_id: int, members_info: MessagesGetConversationMembers) -> NoReturn:
         """
         Регистрация чата
         Уровни администрации пользователей:
         2 - создатель, 1 - администратор, 0 -обычный пользователь.
         По умолчанию создателю даётся ранг 5, админам ранг 4
         """
+        profiles = members_info.profiles
+        members = members_info.items
         await self.Chat.create(chat_id=chat_id, is_group=members[0].member_id < 0 and members[0].is_owner)
         users_info = [{"user_id": x.id, "names": collect_names(x), "sex": x.sex, "birthday": convert_date(x.bdate),
-                       "screen_name": x.screen_name or f"id{x.id}"} for x in users_responses]
+                       "screen_name": x.screen_name or f"id{x.id}"} for x in profiles]
         await insert(self.User).values(users_info).on_conflict_do_nothing().gino.scalar()
 
         # Записываем информацию о пользователях в чате
         users_chat_info = [(x.member_id, chat_id, 2 if x.is_owner else 1 if x.is_admin else 0, 5 if x.is_owner else 4
         if x.is_admin else 0, x.invited_by, datetime.utcfromtimestamp(x.join_date))
                            for x in members if x.member_id > 0]
+        await insert(self.UserToChat).values(users_chat_info).gino.scalar()
+
+        user_ids_in_chat = {x.member_id for x in members if x.member_id > 0}
+        user_ids_all = {x.id for x in profiles}
+        users_left = list(user_ids_all - user_ids_in_chat)
+        users_chat_info = [(x, chat_id, 0, 0, None, None, False) for x in users_left]
         await insert(self.UserToChat).values(users_chat_info).gino.scalar()
 
     async def is_higher(self, chat_id: int, from_user_id: int, to_user_id: int) -> bool:

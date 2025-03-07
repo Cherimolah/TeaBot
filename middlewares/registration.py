@@ -9,7 +9,7 @@ from asyncpg.exceptions import UniqueViolationError
 
 from loader import bot
 from config import ADMIN_ID
-from utils.vkscripts import get_cases_users
+from utils.vkscripts import get_cases_users, user_fields
 from utils.parsing import collect_names, convert_date
 from utils.parsing_users import parse_user_cases
 
@@ -22,10 +22,8 @@ class RegistrationMiddleware(BaseMiddleware[Message], ABC):
                 self.event.chat_id) and self.event.action is None:
             m: Message = self.event
             try:
-                members = await bot.api.messages.get_conversation_members(m.peer_id)
-                users_ids = [x.member_id for x in members.items if x.member_id > 0]
-                users_responses = await parse_user_cases(users_ids)
-                await db.register_chat(m.chat_id, members.items, users_responses)
+                members = await bot.api.messages.get_conversation_members(m.peer_id, fields=user_fields)
+                await db.register_chat(m.chat_id, members)
                 await m.reply(f"✅ Беседа успешно зарегестрирована! Идентификатор беседы: {m.chat_id}")
                 reply = f"Новая беседа! Айди {m.chat_id}\n" \
                         f"Первый в списке: https://vk.com/id{members.items[0].member_id}"

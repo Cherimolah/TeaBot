@@ -8,12 +8,12 @@ from loader import client
 
 
 name_cases = ("nom", "gen", "dat", "acc", "ins", "abl")
+user_fields = [f"first_name_{x},last_name_{x}" for x in name_cases]
+user_fields.extend(['sex', 'bdate', 'screen_name'])
 
 
 async def get_cases_users(user_ids: List[int]) -> List[UsersUserFull]:
-    fields = [f"first_name_{x},last_name_{x}" for x in name_cases]
-    fields.append("sex,screen_name,bdate")
-    return await bot.api.users.get(user_ids=user_ids, fields=fields)
+    return await bot.api.users.get(user_ids=user_ids, fields=user_fields)
 
 
 async def get_conversations_members(peer_ids: List[int]) -> dict:
