@@ -303,17 +303,14 @@ async def ai_chat_handler_private(m: Message):
     message = await m.reply('⏳ Размышляю....')
     await db.Context.create(user_id=m.from_id, role=True, content=m.text)
     response = await db.select([db.Context.role, db.Context.content]).where(
-        db.Context.user_id == m.from_id).order_by(db.Context.content.asc()).gino.all()
+        db.Context.user_id == m.from_id).order_by(db.Context.id.desc()).gino.all()
     messages = []
     for role, content in response:
         messages.append({"role": "user" if role else "assistant", "content": content})
     reply, format_data = await generate_ai_text(messages)
     await db.Context.create(user_id=m.from_id, role=False, content=reply)
     await bot.api.messages.delete(cmids=[message.conversation_message_id], delete_for_all=True, peer_id=m.peer_id)
-    await bot.api.messages.send(peer_id=m.peer_id, message=reply, random_id=0, format_data=format_data)
     try:
-        pass
-    # except VKAPIError:
-    #     await m.reply('Не удалось сгенерировать ответ. Возможно необходимо сбросить контекст')
-    except Exception as e:
-        print(e)
+        await bot.api.messages.send(peer_id=m.peer_id, message=reply, random_id=0, format_data=format_data)
+    except VKAPIError:
+        await m.reply('Не удалось сгенерировать ответ. Возможно необходимо сбросить контекст')

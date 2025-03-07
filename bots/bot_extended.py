@@ -63,11 +63,9 @@ class MessagesCategoryExtended(MessagesCategory):
                 if not items:
                     real_format_data = None
             if number < count:
-                print(real_format_data)
                 params = {k: v for k, v in locals().items() if k not in ('self', 'message', 'attachment', 'keyboard', 'format_data', 'real_format_data', 'item', 'items', 'params')}
                 msgs.append(await super().send(message=message[i:i + 4096], format_data=real_format_data, **params))
             else:
-                print(real_format_data)
                 params = {k: v for k, v in locals().items() if k not in ('self', 'message', 'format_data', 'real_format_data', 'item', 'items', 'params')}
                 msgs.append(await super().send(message=message[i:i + 4096], format_data=real_format_data, **params))
         msgs = [y for x in msgs for y in x]

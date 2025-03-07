@@ -241,6 +241,7 @@ async def generate_ai_text(messages) -> Tuple[str, Optional[Dict]]:
         model="google/gemini-2.0-pro-exp-02-05:free",
         messages=messages
     )
+    print(completion)
     if not completion.choices:
         return 'Не удалось сгенерировать ответ', None
     text = completion.choices[0].message.content.replace('</think>', '')
