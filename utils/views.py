@@ -241,7 +241,6 @@ async def generate_ai_text(messages) -> Tuple[str, Optional[Dict]]:
         model="google/gemini-2.0-pro-exp-02-05:free",
         messages=messages
     )
-    print(completion)
     if not completion.choices:
         return 'Не удалось сгенерировать ответ', None
     text = completion.choices[0].message.content.replace('</think>', '')
@@ -257,36 +256,52 @@ def remove_variation_selectors(text):
     return text
 
 
-
 def format_text(text: str) -> Tuple[str, Optional[Dict]]:
-    state = False  # Unbold
-    indexes: List[Tuple[int, int]] = []
-    start = 0
-    markdown = False
     text = remove_variation_selectors(text)
-    for i in range(len(text) - 1):
-        if text[i] == '*' and text[i + 1] == '*':
-            markdown = True
-            if not state:
-                state = True
-                start = i + 2
-            else:
-                state = False
-                indexes.append((start, i - 1))
-    text = text.replace('**', '')
-    items = []
-    for i, data in enumerate(indexes):
-        a, b = data
-        items.append({
-            "type": "bold",
-            "offset": grapheme.length(text[:a - (i * 4 + 2)]),
-            "length": b - a + 1
-        })
+    print(text)
+    clean_text = text.replace('`', '').replace('**', '')
+    markdown = False
+    a = text.replace('```', '').replace('`', '')
+    a = re.sub(r'\n{3,}', '\n\n', a)
+    bold_pattern = re.finditer(r'\*\*(.*?)\*\*', a, re.DOTALL)
+
+    offsets = []
+
+    shift = 0
+    for match in bold_pattern:
+        markdown = True
+        start, end = match.span()
+        offsets.append({"type": "bold", "offset": grapheme.length(clean_text[:start - shift]), 'length': end - start - 4})
+        shift += 4
+
+    b = text.replace("**", '').replace('```', '')
+    b = re.sub(r'\n{3,}', '\n\n', b)
+    italic_pattern = re.finditer(r'`(.*?)`', b, re.DOTALL)
+
+    shift = 0
+    for match in italic_pattern:
+        markdown = True
+        start, end = match.span()
+        offsets.append({"type": "italic", "offset": grapheme.length(clean_text[:start - shift]), 'length': end - start - 2})
+        shift += 2
+
+    c = text.replace('**', '')
+    c = re.sub(r'(?<!`)`(?!`)', '', c)
+
+    italic_pattern = re.finditer(r'```(.*?)```', c, re.DOTALL)
+
+    shift = 0
+    for match in italic_pattern:
+        markdown = True
+        start, end = match.span()
+        offsets.append({"type": "italic", "offset": grapheme.length(clean_text[:start - shift]), 'length': end - start - 6})
+        shift += 8
+
     if markdown:
         format_data = {
             "version": 1,
-            "items": items,
+            "items": offsets
         }
-        return text, format_data
+        return clean_text, format_data
     else:
-        return text, None
+        return clean_text, None

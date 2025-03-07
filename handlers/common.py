@@ -281,10 +281,10 @@ async def ai_chat_handler(m: Message):
     if not m.text:
         return
     message = await m.reply('⏳ Размышляю....')
-    text = await generate_ai_text([{"role": "user", "content": m.text}])
+    text, format_data = await generate_ai_text([{"role": "user", "content": m.text}])
     await bot.api.messages.delete(cmids=[message.conversation_message_id], delete_for_all=True, peer_id=m.peer_id)
     try:
-        await m.reply(text)
+        await m.reply(message=text, format_data=format_data)
     except VKAPIError:
         await m.reply('Не удалось сгенерировать ответ. Возможно необходимо сбросить контекст')
 

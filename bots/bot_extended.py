@@ -53,6 +53,7 @@ class MessagesCategoryExtended(MessagesCategory):
             random_id = 0
         count = int(len(message) // 4096)
         msgs = []
+        print(format_data)
         for number, i in enumerate(range(0, len(message), 4096)):
             if format_data:
                 items = []
@@ -63,6 +64,7 @@ class MessagesCategoryExtended(MessagesCategory):
                 if not items:
                     real_format_data = None
             if number < count:
+                print(real_format_data)
                 params = {k: v for k, v in locals().items() if k not in ('self', 'message', 'attachment', 'keyboard', 'format_data', 'real_format_data', 'item', 'items', 'params')}
                 msgs.append(await super().send(message=message[i:i + 4096], format_data=real_format_data, **params))
             else:
