@@ -258,7 +258,6 @@ def remove_variation_selectors(text):
 
 def format_text(text: str) -> Tuple[str, Optional[Dict]]:
     text = remove_variation_selectors(text)
-    print(text)
     clean_text = text.replace('`', '').replace('**', '')
     markdown = False
     a = text.replace('```', '').replace('`', '')
@@ -271,7 +270,8 @@ def format_text(text: str) -> Tuple[str, Optional[Dict]]:
     for match in bold_pattern:
         markdown = True
         start, end = match.span()
-        offsets.append({"type": "bold", "offset": grapheme.length(clean_text[:start - shift]), 'length': end - start - 4})
+        offsets.append({"type": "bold", "offset": grapheme.length(clean_text[:start - shift]),
+                        'length': grapheme.length(clean_text[:end]) - grapheme.length(clean_text[:start]) - 4})
         shift += 4
 
     b = text.replace("**", '').replace('```', '')
@@ -282,7 +282,8 @@ def format_text(text: str) -> Tuple[str, Optional[Dict]]:
     for match in italic_pattern:
         markdown = True
         start, end = match.span()
-        offsets.append({"type": "italic", "offset": grapheme.length(clean_text[:start - shift]), 'length': end - start - 2})
+        offsets.append({"type": "italic", "offset": grapheme.length(clean_text[:start - shift]),
+                        'length': grapheme.length(clean_text[:end]) - grapheme.length(clean_text[:start]) - 2})
         shift += 2
 
     c = text.replace('**', '')
@@ -294,7 +295,8 @@ def format_text(text: str) -> Tuple[str, Optional[Dict]]:
     for match in italic_pattern:
         markdown = True
         start, end = match.span()
-        offsets.append({"type": "italic", "offset": grapheme.length(clean_text[:start - shift]), 'length': end - start - 6})
+        offsets.append({"type": "italic", "offset": grapheme.length(clean_text[:start - shift]),
+                        'length': grapheme.length(clean_text[:end]) - grapheme.length(clean_text[:start]) - 6})
         shift += 8
 
     if markdown:
