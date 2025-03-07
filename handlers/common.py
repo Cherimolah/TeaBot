@@ -311,6 +311,7 @@ async def ai_chat_handler_private(m: Message):
     await db.Context.create(user_id=m.from_id, role=False, content=reply)
     await bot.api.messages.delete(cmids=[message.conversation_message_id], delete_for_all=True, peer_id=m.peer_id)
     try:
-        await bot.api.messages.send(peer_id=m.peer_id, message=reply, random_id=0, format_data=format_data)
+        await bot.api.messages.send(peer_id=m.peer_id, message=reply, random_id=0, format_data=format_data,
+                                    keyboard=keyboards.private.main_kb)
     except VKAPIError:
         await m.reply('Не удалось сгенерировать ответ. Возможно необходимо сбросить контекст')
