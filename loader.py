@@ -6,9 +6,10 @@ from vkbottle.user import User
 from vkbottle.bot import Bot
 from vkbottle.framework.labeler.bot import BotLabeler
 from ayoomoney.wallet import YooMoneyWalletAsync
+from openai import AsyncOpenAI
 
 from bots.bot_extended import APIExtended, RawBotEventViewExtended, BotMessageViewExtended, AioHTTPClientExtended, RouterExtended, ErrorHandlerExtended
-from config import BOT_TOKEN, USER_TOKEN, YOOMONEY_TOKEN
+from config import BOT_TOKEN, USER_TOKEN, YOOMONEY_TOKEN, AI_API_KEYS
 
 client = AioHTTPClientExtended()
 
@@ -27,3 +28,5 @@ loguru.logger.remove()
 loguru.logger.add(sys.stdout, level="INFO")
 
 captcha_users: Dict[int, int] = {}
+
+ai_clients = [AsyncOpenAI(base_url="https://openrouter.ai/api/v1", api_key=api_key) for api_key in AI_API_KEYS]

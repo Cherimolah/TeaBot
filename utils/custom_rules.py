@@ -14,6 +14,9 @@ from db_api.db_engine import db
 from loader import bot
 
 
+ai_users = set()
+
+
 class InteractionUsers(ABCRule, ABC):
     def __init__(self, command: str, check_chat: bool = True, self_protect: bool = True, return_himself=False,
                  offset: int = 0):
@@ -228,3 +231,12 @@ class BotMentioned(ABCRule, ABC):
     async def check(self, m: Message):
         if m.text.startswith(f'[club{GROUP_ID}|') or (m.reply_message and m.reply_message.from_id == -GROUP_ID) or (m.fwd_messages and m.fwd_messages[0].from_id == -GROUP_ID):
             return True
+
+
+class AIFree(ABCRule, ABC):
+    async def check(self, m: Message):
+        if m.from_id in ai_users:
+            await m.reply('🙅‍♂️ Ожидайте ответа')
+            return False
+        ai_users.add(m.from_id)
+        return True

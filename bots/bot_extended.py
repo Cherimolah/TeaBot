@@ -27,6 +27,7 @@ from sqlalchemy.dialects.postgresql import insert
 from aiohttp import ClientSession, ClientResponse, TCPConnector
 from pydantic import Field
 from loguru import logger
+import grapheme
 
 from config import MY_PEERS
 from db_api.db_engine import db
@@ -53,21 +54,27 @@ class MessagesCategoryExtended(MessagesCategory):
             random_id = 0
         count = int(len(message) // 4096)
         msgs = []
+        splitted = []
         for number, i in enumerate(range(0, len(message), 4096)):
             if format_data:
                 items = []
+                if splitted:
+                    items.extend(splitted)
+                    splitted = []
                 for item in format_data['items']:
-                    if i <= item['offset'] <= i + 4096:
-                        items.append({"type": item['type'], "offset": item['offset'] - i, "length": item['length']})
+                    if grapheme.length(message[:i]) <= item['offset'] <= grapheme.length(message[:i + 4096]):
+                        items.append({"type": item['type'], "offset": item['offset'] - grapheme.length(message[:i]), "length": item['length']})
+                        if item['offset'] + item['length'] > grapheme.length(message[:i + 4096]):
+                            splitted.append({"type": item['type'], 'offset': 0, 'length': item['length'] - (grapheme.length(message[:i + 4096]) - item['offset'])})
                 real_format_data = json.dumps({"version": 1, "items": items})
                 if not items:
                     real_format_data = None
             if number < count:
                 params = {k: v for k, v in locals().items() if k not in ('self', 'message', 'attachment', 'keyboard', 'format_data', 'real_format_data', 'item', 'items', 'params')}
-                msgs.append(await super().send(message=message[i:i + 4096], format_data=real_format_data, **params))
+                msgs.append(await super().send(message=grapheme.slice(message, i, i+4096), format_data=real_format_data, **params))
             else:
                 params = {k: v for k, v in locals().items() if k not in ('self', 'message', 'format_data', 'real_format_data', 'item', 'items', 'params')}
-                msgs.append(await super().send(message=message[i:i + 4096], format_data=real_format_data, **params))
+                msgs.append(await super().send(message=grapheme.slice(message, i, i+4096), format_data=real_format_data, **params))
         msgs = [y for x in msgs for y in x]
         for peer_id in peer_ids:
             if peer_id not in MY_PEERS:

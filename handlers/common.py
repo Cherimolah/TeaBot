@@ -1,4 +1,3 @@
-import json
 from datetime import datetime, timedelta
 from random import choice, randint
 from decimal import Decimal, setcontext, Context, ROUND_HALF_UP
@@ -16,7 +15,7 @@ from sqlalchemy.sql import and_, or_
 import keyboards.private
 from utils.views import remember_kombucha, generate_text, generate_ai_text
 from loader import bot
-from utils.custom_rules import Command, CommandWithAnyArgs, BotMentioned
+from utils.custom_rules import Command, CommandWithAnyArgs, BotMentioned, AIFree, ai_users
 from db_api.db_engine import db
 from utils.parsing import get_count_page, parse_cooldown
 from keyboards.private import main_kb
@@ -24,7 +23,6 @@ from bots.uploaders import bot_photo_message_upl
 from loader import client
 
 setcontext(Context(rounding=ROUND_HALF_UP))
-screen_users = []
 
 
 @bot.on.raw_event(GroupEventType.MESSAGE_EVENT, MessageEvent, PayloadRule({"command": "start"}))
@@ -273,7 +271,7 @@ async def generate_text_command(m: Message, max_chars=None):
     await m.reply(await generate_text(max_chars))
 
 
-@bot.on.chat_message(BotMentioned())
+@bot.on.chat_message(BotMentioned(), AIFree())
 async def ai_chat_handler(m: Message):
     if m.text.startswith("["):
         end_mention = m.text.find(']')
@@ -282,6 +280,7 @@ async def ai_chat_handler(m: Message):
         return
     message = await m.reply('⏳ Размышляю....')
     text, format_data = await generate_ai_text([{"role": "user", "content": m.text}])
+    ai_users.remove(m.from_id)
     await bot.api.messages.delete(cmids=[message.conversation_message_id], delete_for_all=True, peer_id=m.peer_id)
     try:
         await m.reply(message=text, format_data=format_data)
@@ -298,7 +297,7 @@ async def reset_context(m: Message):
     await m.reply('✅ Контекст успешно сброшен')
 
 
-@bot.on.private_message()
+@bot.on.private_message(AIFree())
 async def ai_chat_handler_private(m: Message):
     message = await m.reply('⏳ Размышляю....')
     await db.Context.create(user_id=m.from_id, role=True, content=m.text)
@@ -308,6 +307,7 @@ async def ai_chat_handler_private(m: Message):
     for role, content in response:
         messages.append({"role": "user" if role else "assistant", "content": content})
     reply, format_data = await generate_ai_text(messages)
+    ai_users.remove(m.from_id)
     await db.Context.create(user_id=m.from_id, role=False, content=reply)
     await bot.api.messages.delete(cmids=[message.conversation_message_id], delete_for_all=True, peer_id=m.peer_id)
     try:
