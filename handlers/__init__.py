@@ -6,5 +6,5 @@ from . import admin_panel
 from . import group_events
 from . import user_management
 from . import roulette
-from . import glue_photos
 from . import common
+from . import glue_photos

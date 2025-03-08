@@ -1,29 +1,16 @@
 import json
 import os
 
-from loader import bot, client
-from vkbottle.bot import Message, Bot
-from config import ADMIN_ID, BOT_TOKEN
+from loader import bot
+from vkbottle.bot import Message
+from config import ADMIN_ID
 from db_api.db_engine import db
-from vkbottle_types.objects import MessagesMessageAttachmentType, PhotosPhoto
-from vkbottle import PhotoMessageUploader
+from vkbottle_types.objects import MessagesMessageAttachmentType
 
 from utils.photos import download_photo
 from bots.uploaders import bot_photo_message_upl
 from utils.custom_rules import AdminPanelCommand
-
-
-photo_m = PhotoMessageUploader(Bot(BOT_TOKEN).api)
-
-
-def get_link_max_photo(photo: PhotosPhoto):
-    square = 0
-    max_index = 0
-    for index, size in enumerate(photo.sizes):
-        if size.height * size.width >= square:
-            square = size.height * size.width
-            max_index = index
-    return photo.sizes[max_index].url
+from utils.photos import re_upload_photo
 
 
 @bot.on.private_message(AdminPanelCommand("скл "))
@@ -37,14 +24,13 @@ async def sql_injection(m: Message):
 
 @bot.on.private_message(AdminPanelCommand("аттач бот"))
 async def get_attachment_string(m: Message):
-    message = (await bot.api.messages.get_by_id(m.id)).items[0]
+    message = await m.get_full_message()
     string_at = ""
     for attachment in message.attachments:
         if attachment.type == MessagesMessageAttachmentType.PHOTO:
-            link_photo = get_link_max_photo(attachment.photo)
-            photo = await client.request_raw(link_photo)
-            string_at += await photo_m.upload(photo)
-            await m.reply(string_at)
+            string_at += await re_upload_photo(attachment.photo, 'photo.jpg')
+            string_at += "\n"
+    await m.reply(string_at)
 
 
 @bot.on.private_message(AdminPanelCommand("рп"))

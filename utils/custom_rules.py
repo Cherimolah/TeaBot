@@ -240,3 +240,22 @@ class AIFree(ABCRule, ABC):
             return False
         ai_users.add(m.from_id)
         return True
+
+
+class AIMode(ABCRule, ABC):
+    async def check(self, m: Message):
+        glue_mode = await db.select([db.User.glue_mode]).where(db.User.user_id == m.from_id).gino.scalar()
+        if not glue_mode:
+            return True
+        return False
+
+
+class GlueMode(ABCRule, ABC):
+    async def check(self, m: Message):
+        glue_mode = await db.select([db.User.glue_mode]).where(db.User.user_id == m.from_id).gino.scalar()
+        return glue_mode
+
+
+class NoAttachment(ABCRule, ABC):
+    async def check(self, m: Message):
+        return False if m.attachments else True

@@ -31,4 +31,6 @@ GROUP_TAG = os.environ.get('GROUP_TAG')
 AI_API_KEYS_FILE = os.environ.get('AI_API_KEYS_FILE')
 
 with open(AI_API_KEYS_FILE, 'r', encoding='utf-8') as file:
-    AI_API_KEYS = file.readlines()
+    AI_API_KEYS = [x.strip() for x in file.readlines()]
+
+PHOTO_HOST_TOKEN = os.environ.get('PHOTO_HOST_TOKEN')

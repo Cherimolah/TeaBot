@@ -14,11 +14,12 @@ from vkbottle import VKAPIError
 from PIL import Image, ImageDraw, ImageFont
 from utils.photos import get_max_photo
 from vkbottle_types.responses.messages import MessagesSendUserIdsResponseItem
+from utils.custom_rules import GlueMode
 
 glue_users = {}
 
 
-@bot.on.private_message(AttachmentTypeRule("photo"))
+@bot.on.private_message(AttachmentTypeRule("photo"), GlueMode())
 async def glue_photos(m: Message):
     message = await m.get_full_message()
     for att in message.attachments:

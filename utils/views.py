@@ -252,6 +252,7 @@ def remove_variation_selectors(text):
 
 def format_text(text: str) -> Tuple[str, Optional[Dict]]:
     text = remove_variation_selectors(text)
+    text = re.sub(r'\*(\w+)', r'* \1', text)
     clean_text = text.replace('`', '').replace('**', '')
     markdown = False
     a = text.replace('```', '').replace('`', '')

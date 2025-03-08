@@ -61,6 +61,7 @@ class MyDatabase(Gino):
             win_dollars = Column(BigInteger, default=0)
             wins = Column(Integer, default=0)
             last_bonus = Column(TIMESTAMP)
+            glue_mode = Column(Boolean, default=False)
 
             _idx = Index("users_ids_idx", "user_id")
 
@@ -221,6 +222,7 @@ class MyDatabase(Gino):
             user_id = Column(BigInteger, ForeignKey('users.user_id', ondelete='CASCADE'), nullable=False)
             role = Column(Boolean)
             content = Column(Text)
+            image_urls = Column(ARRAY(Text))
 
         self.Context = Context
 

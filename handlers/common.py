@@ -5,22 +5,24 @@ import random
 import time
 import asyncio
 
-from vkbottle.dispatch.rules.base import PayloadRule, PayloadMapRule
+from vkbottle.dispatch.rules.base import PayloadRule, PayloadMapRule, AttachmentTypeRule
 from vkbottle.bot import Message, MessageEvent
 from vkbottle import Keyboard, Callback, KeyboardButtonColor
 from vkbottle import GroupEventType, VKAPIError
+from vkbottle_types.objects import MessagesMessageAttachmentType
 from sqlalchemy import func
 from sqlalchemy.sql import and_, or_
 
-import keyboards.private
 from utils.views import remember_kombucha, generate_text, generate_ai_text
 from loader import bot
-from utils.custom_rules import Command, CommandWithAnyArgs, BotMentioned, AIFree, ai_users
+from utils.custom_rules import Command, CommandWithAnyArgs, BotMentioned, AIFree, ai_users, AIMode, NoAttachment
 from db_api.db_engine import db
 from utils.parsing import get_count_page, parse_cooldown
-from keyboards.private import main_kb
+from keyboards.generators import main_kb
 from bots.uploaders import bot_photo_message_upl
 from loader import client
+from utils.photos import get_max_photo
+
 
 setcontext(Context(rounding=ROUND_HALF_UP))
 
@@ -34,7 +36,7 @@ async def start(m: Message):
     if has_game:
         return "Ээ давай не тикай с катки"
     await m.reply("✋ Приветствую тебя! Здесь ты можешь склеить мем, получить эстетику или узнать предсказание",
-                  keyboard=main_kb)
+                  keyboard=await main_kb(m.from_id))
 
 
 @bot.on.message(Command(["бот", "bot"]))
@@ -55,7 +57,7 @@ async def send_help(m: Message):
     if m.peer_id > 2_000_000_000:
         kb = None
     else:
-        kb = main_kb
+        kb = await main_kb(m.from_id)
     await m.reply("Список команд: vk.com/@your_tea_bot-help\n\n"
                   "⚠ Если у тебя есть вопрос по работе бота можешь написать главному админу [id32650977|Илье Елесину] ⚠",
                   attachment="article-201071106_56737_9267e7523067b92cd6", keyboard=kb)
@@ -86,13 +88,6 @@ async def send_prediction(m: Message):
     prediction = await db.Prediction.query.order_by(func.random()).limit(1).gino.first()
     await m.reply(f"🔮 Вам выпала фигура: {prediction.figure_name}\n"
                   f"📄 Значение: {prediction.mean}", attachment=prediction.picture)
-
-
-@bot.on.private_message(PayloadRule({"button": "glue"}))
-@bot.on.private_message(PayloadRule({"button": "2"}))
-@bot.on.private_message(PayloadRule({"button": 2}))
-async def need_glue(m: Message):
-    await m.reply("Кидай фотографии")
 
 
 @bot.on.chat_message(Command(["убери клаву", "-клава", "удали клаву", "удали клавиатуру", "убери клавиатуру"]))
@@ -271,6 +266,20 @@ async def generate_text_command(m: Message, max_chars=None):
     await m.reply(await generate_text(max_chars))
 
 
+@bot.on.private_message(PayloadRule({"main_menu": "ai_mode"}))
+async def turn_on_ai_mode(m: Message):
+    await db.User.update.values(glue_mode=False).where(db.User.user_id == m.from_id).gino.status()
+    await m.reply('🤖🧠 Включён режим распознавания изображений. Теперь фотографии будут отправляться нейросети',
+                  keyboard=await main_kb(m.from_id))
+
+
+@bot.on.private_message(PayloadRule({"main_menu": "glue"}))
+async def turn_off_glue_mode(m: Message):
+    await db.User.update.values(glue_mode=True).where(db.User.user_id == m.from_id).gino.status()
+    await m.reply('🛠 Ты выключил режим распознавания, теперь я буду склеивать отправленные тобой фото',
+                  keyboard=await main_kb(m.from_id))
+
+
 @bot.on.chat_message(BotMentioned(), AIFree())
 async def ai_chat_handler(m: Message):
     if m.text.startswith("["):
@@ -278,8 +287,25 @@ async def ai_chat_handler(m: Message):
         m.text = m.text[end_mention+1:].strip()
     if not m.text:
         return
+    urls = []
+    if m.attachments:
+        m_full = await m.get_full_message()
+        for attachment in m_full.attachments:
+            if attachment.type == MessagesMessageAttachmentType.PHOTO:
+                url = get_max_photo(m.attachments[0].photo)
+                urls.append(url)
+        if not urls:
+            await m.reply("Ты мне чё-то скинул, но я умею распознавать только фотки😊")
+            return
+    if not urls:
+        content = m.text
+    else:
+        content = [{"type": "text", "text": m.text or ''}]
+        for url in urls:
+            content.append({"type": "image_url", "image_url": {"url": url}})
+    messages = [{"role": "user", "content": content}]
     message = await m.reply('⏳ Размышляю....')
-    text, format_data = await generate_ai_text([{"role": "user", "content": m.text}])
+    text, format_data = await generate_ai_text(messages)
     ai_users.remove(m.from_id)
     await bot.api.messages.delete(cmids=[message.conversation_message_id], delete_for_all=True, peer_id=m.peer_id)
     try:
@@ -297,21 +323,39 @@ async def reset_context(m: Message):
     await m.reply('✅ Контекст успешно сброшен')
 
 
-@bot.on.private_message(AIFree())
+@bot.on.private_message(AIFree(), NoAttachment())
+@bot.on.private_message(AttachmentTypeRule("photo"), AIMode(), AIFree())
 async def ai_chat_handler_private(m: Message):
+    if m.attachments:
+        m_full = await m.get_full_message()
+        urls = []
+        for attachment in m_full.attachments:
+            if attachment.type == MessagesMessageAttachmentType.PHOTO:
+                url = get_max_photo(m.attachments[0].photo)
+                urls.append(url)
+        if urls:
+            await db.Context.create(user_id=m.from_id, role=True, content=m.text or "", image_urls=urls)
+        else:
+            await m.reply("Ты мне чё-то скинул, но я умею распознавать только фотки😊")
+            return
+    else:
+        await db.Context.create(user_id=m.from_id, role=True, content=m.text)
     message = await m.reply('⏳ Размышляю....')
-    await db.Context.create(user_id=m.from_id, role=True, content=m.text)
-    response = await db.select([db.Context.role, db.Context.content]).where(
+    response = await db.select([db.Context.role, db.Context.content, db.Context.image_urls]).where(
         db.Context.user_id == m.from_id).order_by(db.Context.id.desc()).gino.all()
     messages = []
-    for role, content in response:
-        messages.append({"role": "user" if role else "assistant", "content": content})
+    for role, content, images in response:
+        if images:
+            messages.append({"role": "user" if role else "assistant", "content": [{"type": "text", "text": m.text or ''}]})
+            for image_url in images:
+                messages[-1]['content'].append({"type": "image_url", "image_url": {"url": image_url}})
+        else:
+            messages.append({"role": "user" if role else "assistant", "content": content})
     reply, format_data = await generate_ai_text(messages)
     ai_users.remove(m.from_id)
     await db.Context.create(user_id=m.from_id, role=False, content=reply)
     await bot.api.messages.delete(cmids=[message.conversation_message_id], delete_for_all=True, peer_id=m.peer_id)
     try:
-        await bot.api.messages.send(peer_id=m.peer_id, message=reply, random_id=0, format_data=format_data,
-                                    keyboard=keyboards.private.main_kb)
+        await bot.api.messages.send(peer_id=m.peer_id, message=reply, random_id=0, format_data=format_data)
     except VKAPIError:
         await m.reply('Не удалось сгенерировать ответ. Возможно необходимо сбросить контекст')

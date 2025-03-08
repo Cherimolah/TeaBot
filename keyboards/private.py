@@ -1,16 +1,5 @@
 from vkbottle import Keyboard, KeyboardButtonColor, Text, Callback
 
-main_kb = Keyboard()
-main_kb.add(Text("🍵☕ Чайная рулетка", {"main_menu": "roulette"}), KeyboardButtonColor.PRIMARY)
-main_kb.row()
-main_kb.add(Text("🛠 Склеить мем", {"button": "glue"}), KeyboardButtonColor.POSITIVE)
-main_kb.add(Text("🔮 Узнать предсказание", {"button": "get_prediction"}), KeyboardButtonColor.NEGATIVE)
-main_kb.row()
-main_kb.add(Text("🍵 Получить эстетику", {"button": "get_aesthetic"}), KeyboardButtonColor.PRIMARY)
-main_kb.add(Text("🆘 Команды", {"button": "help"}), KeyboardButtonColor.SECONDARY)
-main_kb.row()
-main_kb.add(Text("♻ Сброс контекста", {"button": "reset_context"}), KeyboardButtonColor.PRIMARY)
-
 formats = []
 
 formats2 = Keyboard(inline=True, one_time=False)
