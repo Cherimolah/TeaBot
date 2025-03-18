@@ -342,7 +342,7 @@ async def ai_chat_handler_private(m: Message):
         await db.Context.create(user_id=m.from_id, role=True, content=m.text)
     message = await m.reply('⏳ Размышляю....')
     response = await db.select([db.Context.role, db.Context.content, db.Context.image_urls]).where(
-        db.Context.user_id == m.from_id).order_by(db.Context.id.desc()).gino.all()
+        db.Context.user_id == m.from_id).order_by(db.Context.id.asc()).gino.all()
     messages = []
     for role, content, images in response:
         if images:
