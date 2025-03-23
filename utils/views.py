@@ -250,13 +250,24 @@ def remove_variation_selectors(text):
     return text
 
 
-def format_text(text: str) -> Tuple[str, Optional[Dict]]:
-    text = remove_variation_selectors(text)
-    text = re.sub(r'\*(\w+)', r'* \1', text)
+def format_text(text_: str) -> Tuple[str, Optional[Dict]]:
+    text = remove_variation_selectors(text_)
+    text = re.sub(r'```(\S+)\s+', '```', text)
+    text = re.sub(r'\s+```', '```', text)
+    text = re.sub(r' +', ' ', text)
+    text = re.sub(r'\n +', '\n', text)
+    text = re.sub(r'\n{3,}', '\n\n', text)
+    text = text.replace('\n* ', '\n• ')
+    text = text.strip()
     clean_text = text.replace('`', '').replace('**', '')
+    clean_text = re.sub(r'\n{3,}', '\n\n', clean_text)
+    clean_text = re.sub(r'(?<=\S)\*', '', clean_text)
+    clean_text = re.sub(r'\*(?=\S)', '', clean_text)
+    clean_text = clean_text.strip()
     markdown = False
-    a = text.replace('```', '').replace('`', '')
-    a = re.sub(r'\n{3,}', '\n\n', a)
+    a = text.replace('`', '')
+    a = re.sub(r'(?<=\S)\*', '', a)
+    a = re.sub(r'\*(?=\S)', '', a)
     bold_pattern = re.finditer(r'\*\*(.*?)\*\*', a, re.DOTALL)
 
     offsets = []
@@ -270,7 +281,8 @@ def format_text(text: str) -> Tuple[str, Optional[Dict]]:
         shift += 4
 
     b = text.replace("**", '').replace('```', '')
-    b = re.sub(r'\n{3,}', '\n\n', b)
+    b = re.sub(r'(?<=\S)\*', '', b)
+    b = re.sub(r'\*(?=\S)', '', b)
     italic_pattern = re.finditer(r'`(.*?)`', b, re.DOTALL)
 
     shift = 0
@@ -282,6 +294,8 @@ def format_text(text: str) -> Tuple[str, Optional[Dict]]:
         shift += 2
 
     c = text.replace('**', '')
+    c = re.sub(r'(?<=\S)\*', '', c)
+    c = re.sub(r'\*(?=\S)', '', c)
     c = re.sub(r'(?<!`)`(?!`)', '', c)
 
     italic_pattern = re.finditer(r'```(.*?)```', c, re.DOTALL)
@@ -292,7 +306,20 @@ def format_text(text: str) -> Tuple[str, Optional[Dict]]:
         start, end = match.span()
         offsets.append({"type": "italic", "offset": grapheme.length(clean_text[:start - shift]),
                         'length': grapheme.length(clean_text[:end]) - grapheme.length(clean_text[:start]) - 6})
-        shift += 8
+        shift += 6
+
+    d = text.replace('**', '').replace('`', '')
+    italic_pattern = re.finditer(r'\*(.*?)\*', d, re.DOTALL)
+
+    shift = 0
+    for match in italic_pattern:
+        markdown = True
+        start, end = match.span()
+        offsets.append({"type": "italic", "offset": grapheme.length(clean_text[:start - shift]),
+                        'length': grapheme.length(clean_text[:end]) - grapheme.length(clean_text[:start]) - 2})
+        shift += 2
+
+    print(offsets)
 
     if markdown:
         format_data = {
