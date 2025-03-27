@@ -232,11 +232,11 @@ async def refill_balance(payment: db.Payment):
 
 async def generate_ai_text(messages) -> Tuple[str, Optional[Dict]]:
     completion = await random.choice(ai_clients).chat.completions.create(
-        model="google/gemini-2.0-pro-exp-02-05:free",
+        model="google/gemini-2.5-pro-exp-03-25:free",
         messages=messages
     )
     if not completion.choices:
-        return 'Не удалось сгенерировать ответ', None
+        return 'В настоящий момент нейросеть недоступна. Все опросы к Google', None
     text = completion.choices[0].message.content.replace('</think>', '')
     text = text.replace('\\n', '\n')
     if not text:
@@ -318,8 +318,6 @@ def format_text(text_: str) -> Tuple[str, Optional[Dict]]:
         offsets.append({"type": "italic", "offset": grapheme.length(clean_text[:start - shift]),
                         'length': grapheme.length(clean_text[:end]) - grapheme.length(clean_text[:start]) - 2})
         shift += 2
-
-    print(offsets)
 
     if markdown:
         format_data = {
