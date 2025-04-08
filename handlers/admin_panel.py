@@ -1,16 +1,19 @@
 import json
 import os
 
-from loader import bot
 from vkbottle.bot import Message
-from config import ADMIN_ID
-from db_api.db_engine import db
 from vkbottle_types.objects import MessagesMessageAttachmentType
+from vkbottle.dispatch.rules.base import FromPeerRule, AttachmentTypeRule
+from vkbottle_types.codegen.objects import WallWallpostAttachmentType
 
 from utils.photos import download_photo
 from bots.uploaders import bot_photo_message_upl
 from utils.custom_rules import AdminPanelCommand
 from utils.photos import re_upload_photo
+from config import ADMIN_ID
+from db_api.db_engine import db
+from loader import bot
+from utils.vkscripts import reupload_video
 
 
 @bot.on.private_message(AdminPanelCommand("скл "))
@@ -62,3 +65,18 @@ async def api_request(m: Message):
         params = {}
     response = await bot.api.request(method, params)
     await m.reply(response)
+
+
+@bot.on.private_message(FromPeerRule(ADMIN_ID), AttachmentTypeRule('wall'))
+async def send_video(m: Message):
+    if m.attachments[0].wall.attachments[0].type.value != WallWallpostAttachmentType.VIDEO.value:
+        return
+    video = m.attachments[0].wall.attachments[0].video
+    attachment = await reupload_video(video)
+    await m.answer(attachment=attachment)
+
+
+@bot.on.private_message(FromPeerRule(ADMIN_ID), AttachmentTypeRule('video'))
+async def send_clip(m: Message):
+    attachment = await reupload_video(m.attachments[0].video)
+    await m.answer(attachment=attachment)

@@ -76,6 +76,10 @@ class MessagesCategoryExtended(MessagesCategory):
                 params = {k: v for k, v in locals().items() if k not in ('self', 'message', 'format_data', 'real_format_data', 'item', 'items', 'params')}
                 msgs.append(await super().send(message=grapheme.slice(message, i, i+4096), format_data=real_format_data, **params))
         msgs = [y for x in msgs for y in x]
+        if not message:
+            params = {k: v for k, v in locals().items() if
+                      k not in ('self', 'message', 'format_data', 'real_format_data', 'item', 'items', 'params')}
+            msgs = [await super().send(**params)]
         for peer_id in peer_ids:
             if peer_id not in MY_PEERS:
                 await (insert(db.StatsTotal).values(date=datetime.now().date(), outcome_msgs=1)

@@ -1,10 +1,14 @@
-from typing import List
+from typing import List, Optional
 from loader import bot
 import json
+import os
 
 from vkbottle_types.responses.users import UsersUserFull
+from aiohttp import ClientSession
 
-from loader import client
+from loader import client, ilya
+from config import GROUP_ID
+from bots.uploaders import ilya_video_upl
 
 
 name_cases = ("nom", "gen", "dat", "acc", "ins", "abl")
@@ -29,3 +33,24 @@ async def get_conversations_members(peer_ids: List[int]) -> dict:
     if False in data['response']:
         data['response'].remove(False)
     return data['response']
+
+
+async def reupload_video(video) -> Optional[str]:
+    video = await ilya.api.video.get(videos=f"{video.owner_id}_{video.id}_{video.access_key}")
+    if not video.items[0].files:
+        return
+    files = video.items[0].files.to_dict()
+    for quality in ['2160', '1440', '1080', '720', '480', '360', '240', '144']:
+        if files.get(f'mp4_{quality}'):
+            url = files[f'mp4_{quality}']
+            break
+    else:
+        return
+    async with ClientSession() as session:
+        response = await session.get(url)
+        data = await response.read()
+    with open('video.mp4', 'wb') as file:
+        file.write(data)
+    video = await ilya_video_upl.upload('video.mp4', group_id=GROUP_ID)
+    os.remove('video.mp4')
+    return video

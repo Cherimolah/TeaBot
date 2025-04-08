@@ -9,7 +9,7 @@ from ayoomoney.wallet import YooMoneyWalletAsync
 from openai import AsyncOpenAI
 
 from bots.bot_extended import APIExtended, RawBotEventViewExtended, BotMessageViewExtended, AioHTTPClientExtended, RouterExtended, ErrorHandlerExtended
-from config import BOT_TOKEN, USER_TOKEN, YOOMONEY_TOKEN, AI_API_KEYS
+from config import BOT_TOKEN, USER_TOKEN, YOOMONEY_TOKEN, AI_API_KEYS, ILYA_TOKEN
 
 client = AioHTTPClientExtended()
 
@@ -21,6 +21,7 @@ bot = Bot(api=APIExtended(BOT_TOKEN, http_client=client),
 bot.labeler.vbml_ignore_case = True
 evg = User(api=APIExtended(USER_TOKEN, http_client=client))
 evg.api.API_VERSION = '5.134'
+ilya = User(api=APIExtended(ILYA_TOKEN, http_client=client))
 
 yoomoney = YooMoneyWalletAsync(YOOMONEY_TOKEN)
 

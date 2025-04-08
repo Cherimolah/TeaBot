@@ -1,9 +1,9 @@
 import asyncio
-from typing import Optional, Union, List
+from typing import Union, List
 
-from vkbottle import VKAPIError, PhotoMessageUploader, DocMessagesUploader
+from vkbottle import VKAPIError, PhotoMessageUploader, DocMessagesUploader, VideoUploader
 
-from loader import bot
+from loader import bot, ilya
 
 
 class MyPhotoMessageUploader(PhotoMessageUploader):
@@ -24,3 +24,4 @@ class MyPhotoMessageUploader(PhotoMessageUploader):
 
 bot_photo_message_upl = MyPhotoMessageUploader(api=bot.api)
 bot_doc_message_upl = DocMessagesUploader(api=bot.api)
+ilya_video_upl = VideoUploader(api=ilya.api)
