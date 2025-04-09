@@ -51,6 +51,6 @@ async def reupload_video(video) -> Optional[str]:
         data = await response.read()
     with open('video.mp4', 'wb') as file:
         file.write(data)
-    video = await ilya_video_upl.upload('video.mp4', group_id=GROUP_ID)
+    video = await ilya_video_upl.upload('video.mp4', is_private=True, group_id=GROUP_ID)
     os.remove('video.mp4')
     return video

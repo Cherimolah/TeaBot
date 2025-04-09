@@ -12,7 +12,7 @@ from utils.custom_rules import AdminPanelCommand
 from utils.photos import re_upload_photo
 from config import ADMIN_ID
 from db_api.db_engine import db
-from loader import bot
+from loader import bot, ilya
 from utils.vkscripts import reupload_video
 
 
