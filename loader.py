@@ -1,6 +1,6 @@
 import sys
 import loguru
-from typing import Dict
+from typing import Dict, List
 
 from vkbottle.user import User
 from vkbottle.bot import Bot
@@ -30,4 +30,4 @@ loguru.logger.add(sys.stdout, level="INFO")
 
 captcha_users: Dict[int, int] = {}
 
-ai_clients = [AsyncOpenAI(base_url="https://openrouter.ai/api/v1", api_key=api_key) for api_key in AI_API_KEYS]
+ai_clients: List[AsyncOpenAI] = [AsyncOpenAI(base_url="https://openrouter.ai/api/v1", api_key=api_key) for api_key in AI_API_KEYS]
