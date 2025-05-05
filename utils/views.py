@@ -232,7 +232,7 @@ async def refill_balance(payment: db.Payment):
 
 async def generate_ai_text(messages) -> Tuple[str, Optional[Dict]]:
     completion = await random.choice(ai_clients).chat.completions.create(
-        model="microsoft/mai-ds-r1:free",
+        model="deepseek/deepseek-r1:free",
         messages=messages
     )
     if not completion.choices:
