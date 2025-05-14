@@ -35,11 +35,11 @@ async def get_conversations_members(peer_ids: List[int]) -> dict:
     return data['response']
 
 
-async def reupload_video(video) -> Optional[str]:
-    video = await ilya.api.video.get(videos=f"{video.owner_id}_{video.id}_{video.access_key}")
-    if not video.items[0].files:
+async def download_video(video):
+    video = (await ilya.api.video.get(videos=f"{video.owner_id}_{video.id}_{video.access_key}")).items[0]
+    if not video.files:
         return
-    files = video.items[0].files.to_dict()
+    files = video.files.to_dict()
     for quality in ['2160', '1440', '1080', '720', '480', '360', '240', '144']:
         if files.get(f'mp4_{quality}'):
             url = files[f'mp4_{quality}']
@@ -49,8 +49,14 @@ async def reupload_video(video) -> Optional[str]:
     async with ClientSession() as session:
         response = await session.get(url)
         data = await response.read()
-    with open('video.mp4', 'wb') as file:
+    with open(f"{video.owner_id}_{video.id}_{video.access_key}.mp4", 'wb') as file:
         file.write(data)
-    video = await ilya_video_upl.upload('video.mp4', is_private=True, group_id=GROUP_ID)
+    return f"{video.owner_id}_{video.id}_{video.access_key}.mp4"
+
+
+async def reupload_video(video) -> Optional[str]:
+    video = (await ilya.api.video.get(videos=f"{video.owner_id}_{video.id}_{video.access_key}")).items[0]
+    filename = await download_video(video)
+    video = await ilya_video_upl.upload(filename, is_private=True, group_id=GROUP_ID)
     os.remove('video.mp4')
     return video

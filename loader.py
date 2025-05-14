@@ -7,9 +7,10 @@ from vkbottle.bot import Bot
 from vkbottle.framework.labeler.bot import BotLabeler
 from ayoomoney.wallet import YooMoneyWalletAsync
 from openai import AsyncOpenAI
+from aiogram import Bot as TGBot
 
 from bots.bot_extended import APIExtended, RawBotEventViewExtended, BotMessageViewExtended, AioHTTPClientExtended, RouterExtended, ErrorHandlerExtended
-from config import BOT_TOKEN, USER_TOKEN, YOOMONEY_TOKEN, AI_API_KEYS, ILYA_TOKEN
+from config import BOT_TOKEN, USER_TOKEN, YOOMONEY_TOKEN, AI_API_KEYS, ILYA_TOKEN, TG_TOKEN
 
 client = AioHTTPClientExtended()
 
@@ -22,6 +23,8 @@ bot.labeler.vbml_ignore_case = True
 evg = User(api=APIExtended(USER_TOKEN, http_client=client))
 evg.api.API_VERSION = '5.134'
 ilya = User(api=APIExtended(ILYA_TOKEN, http_client=client))
+
+tg_bot = TGBot(token=TG_TOKEN)
 
 yoomoney = YooMoneyWalletAsync(YOOMONEY_TOKEN)
 
