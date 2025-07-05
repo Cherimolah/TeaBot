@@ -282,6 +282,7 @@ async def turn_off_glue_mode(m: Message):
 
 @bot.on.chat_message(BotMentioned(), AIFree())
 async def ai_chat_handler(m: Message):
+    ai_users.add(m.from_id)
     if m.text.startswith("["):
         end_mention = m.text.find(']')
         m.text = m.text[end_mention+1:].strip()
@@ -326,6 +327,7 @@ async def reset_context(m: Message):
 @bot.on.private_message(AIFree(), NoAttachment())
 @bot.on.private_message(AttachmentTypeRule("photo"), AIMode(), AIFree())
 async def ai_chat_handler_private(m: Message):
+    ai_users.add(m.from_id)
     if m.attachments:
         m_full = await m.get_full_message()
         urls = []

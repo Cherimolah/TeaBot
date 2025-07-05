@@ -238,7 +238,6 @@ class AIFree(ABCRule, ABC):
         if m.from_id in ai_users:
             await m.reply('🙅‍♂️ Ожидайте ответа')
             return False
-        ai_users.add(m.from_id)
         return True
 
 

@@ -232,11 +232,11 @@ async def refill_balance(payment: db.Payment):
 
 async def generate_ai_text(messages) -> Tuple[str, Optional[Dict]]:
     completion = await random.choice(ai_clients).chat.completions.create(
-        model="deepseek/deepseek-r1:free",
-        messages=messages
+        model="google/gemma-3-27b-it:free",
+        messages=messages,
     )
     if not completion.choices:
-        return 'В настоящий момент нейросеть недоступна. Все вопросы к Чинь Чань Чонь', None
+        return 'В настоящий момент нейросеть недоступна. Все вопросы к Свобода Справдливость Рынок Доллары Гей-браки (запрещены в РФ)', None
     text = completion.choices[0].message.content.replace('</think>', '')
     text = text.replace('\\n', '\n')
     if not text:
