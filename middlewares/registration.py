@@ -18,6 +18,9 @@ class RegistrationMiddleware(BaseMiddleware[Message], ABC):
     async def pre(self) -> None:
         if self.event.peer_id > 2000000000 and self.event.from_id == ADMIN_ID and self.event.text == "/айди":
             await self.event.reply(f"Пир: {self.event.peer_id}")
+            await self.stop()
+        if self.event.from_id > 2000000000:
+            await self.stop()
         if self.event.peer_id > 2e9 and not await db.is_chat_registered(
                 self.event.chat_id) and self.event.action is None:
             m: Message = self.event
