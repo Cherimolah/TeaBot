@@ -58,5 +58,5 @@ async def reupload_video(video) -> Optional[str]:
     video = (await ilya.api.video.get(videos=f"{video.owner_id}_{video.id}_{video.access_key}")).items[0]
     filename = await download_video(video)
     video = await ilya_video_upl.upload(filename, is_private=True, group_id=GROUP_ID)
-    os.remove('video.mp4')
+    os.remove(filename)
     return video
