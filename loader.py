@@ -8,6 +8,8 @@ from vkbottle.framework.labeler.bot import BotLabeler
 from ayoomoney.wallet import YooMoneyWalletAsync
 from openai import AsyncOpenAI
 from aiogram import Bot as TGBot
+from aiogram.client.telegram import TelegramAPIServer
+from aiogram.client.bot import AiohttpSession
 
 from bots.bot_extended import APIExtended, RawBotEventViewExtended, BotMessageViewExtended, AioHTTPClientExtended, RouterExtended, ErrorHandlerExtended
 from config import BOT_TOKEN, USER_TOKEN, YOOMONEY_TOKEN, AI_API_KEYS, ILYA_TOKEN, TG_TOKEN
@@ -24,7 +26,8 @@ evg = User(api=APIExtended(USER_TOKEN, http_client=client))
 evg.api.API_VERSION = '5.134'
 ilya = User(api=APIExtended(ILYA_TOKEN, http_client=client))
 
-tg_bot = TGBot(token=TG_TOKEN)
+session = AiohttpSession(api=TelegramAPIServer.from_base('http://localhost:8081'))
+tg_bot = TGBot(token=TG_TOKEN, session=session)
 
 yoomoney = YooMoneyWalletAsync(YOOMONEY_TOKEN)
 
