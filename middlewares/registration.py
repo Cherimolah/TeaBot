@@ -28,7 +28,8 @@ class RegistrationMiddleware(BaseMiddleware[Message], ABC):
                 members = await bot.api.messages.get_conversation_members(m.peer_id, fields=user_fields)
                 await db.register_chat(m.chat_id, members)
                 await m.reply(f"✅ Беседа успешно зарегестрирована! Идентификатор беседы: {m.chat_id}")
-                reply = f"Новая беседа! Айди {m.chat_id}\n" \
+                chat_name = (await bot.api.messages.get_conversations_by_id(peer_ids=[self.event.peer_id])).items[0].chat_settings.title
+                reply = f"Новая беседа! «{chat_name}» (id={m.chat_id})\n" \
                         f"Первый в списке: https://vk.com/id{members.items[0].member_id}"
                 for member in members.items:
                     if member.is_owner:
