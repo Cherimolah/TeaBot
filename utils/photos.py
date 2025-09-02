@@ -1,10 +1,7 @@
-import json
 import os
-import base64
 
 from vkbottle_types.objects import PhotosPhoto
 import aiofiles
-from aiohttp import ClientSession
 
 from bots.uploaders import bot_photo_message_upl
 from loader import client

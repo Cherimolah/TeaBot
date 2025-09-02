@@ -22,6 +22,7 @@ bot = Bot(api=APIExtended(BOT_TOKEN, http_client=client),
           router=RouterExtended(), error_handler=ErrorHandlerExtended())
 
 bot.labeler.vbml_ignore_case = True
+bot.api.API_URL = 'https://api.vk.ru/method/'
 evg = User(api=APIExtended(USER_TOKEN, http_client=client))
 evg.api.API_VERSION = '5.134'
 ilya = User(api=APIExtended(ILYA_TOKEN, http_client=client))
