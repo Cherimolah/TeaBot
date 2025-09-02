@@ -283,7 +283,7 @@ class ABCBotMessageViewExtended(ABCBotMessageView, ABC):
     ) -> "MessageMin":
         message = message_min(event, ctx_api, replace_mention)
         if isinstance(message.payload, str):
-            message.payload = json.loads(message.payload)
+            message = message.model_copy(update={'payload': message.payload})
         return message
 
 

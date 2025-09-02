@@ -33,7 +33,6 @@ AI_API_KEYS_FILE = os.environ.get('AI_API_KEYS_FILE')
 with open(AI_API_KEYS_FILE, 'r', encoding='utf-8') as file:
     AI_API_KEYS = [x.strip() for x in file.readlines()]
 
-PHOTO_HOST_TOKEN = os.environ.get('PHOTO_HOST_TOKEN')
 ILYA_TOKEN = os.environ.get('ILYA_TOKEN')
 TG_TOKEN = os.environ.get('TG_TOKEN')
 TG_ADMIN_ID = os.environ.get('TG_ADMIN_ID')
